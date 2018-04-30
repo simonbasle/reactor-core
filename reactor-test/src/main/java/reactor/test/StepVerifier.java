@@ -21,6 +21,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -264,6 +267,16 @@ public interface StepVerifier {
 
 		return DefaultStepVerifierBuilder.newVerifier(options,
 				scenarioSupplier);
+	}
+
+	static <T> FirstStep<T> withTimeAccelerated(Supplier<? extends Publisher<? extends T>> scenarioSupplier,
+			Duration virtualTimeFor100milliseconds) {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet();
+		final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+		executorService.scheduleAtFixedRate(() -> vts.advanceTimeBy(virtualTimeFor100milliseconds),
+				100, 100, TimeUnit.MILLISECONDS);
+		return withVirtualTime(scenarioSupplier, StepVerifierOptions
+				.create().virtualTimeSchedulerSupplier(() -> vts));
 	}
 
 	/**

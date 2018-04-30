@@ -1966,4 +1966,14 @@ public class StepVerifierTests {
 			assertThatCode(ex2::get).as("execution 2 in iteration #" + i).doesNotThrowAnyException();
 		}
 	}
+
+	@Test
+	public void witTimeAcceleration() {
+		StepVerifier.withTimeAccelerated(() -> Flux.interval(Duration.ofHours(1))
+		                                           .take(5)
+		                                           .log(),
+				Duration.ofMinutes(1))
+		            .expectNextCount(5)
+		            .verifyComplete();
+	}
 }
