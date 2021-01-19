@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
 
+import reactor.util.annotation.Nullable;
+
 /**
  * Test utility around memory, references, leaks and retained object detection.
  *
@@ -93,7 +95,7 @@ public class MemoryUtils {
 	 */
 	public static final class OffHeapDetector {
 
-		private final Queue<Tracked> tracker;
+		private final Queue<Tracked<?>> tracker;
 
 
 		public OffHeapDetector() {
@@ -107,8 +109,20 @@ public class MemoryUtils {
 		 * @param identifier the identifier for the tracked object
 		 * @return the new tracked object to be manually released
 		 */
-		public final Tracked track(String identifier) {
-			Tracked tracked = new Tracked(identifier);
+		public final Tracked<String> track(String identifier) {
+			Tracked<String> tracked = new Tracked<>(identifier);
+			tracker.add(tracked);
+			return tracked;
+		}
+
+		/**
+		 * Create a {@link Tracked} object with the given arbitrary content.
+		 *
+		 * @param content the content for the tracked object
+		 * @return the new tracked object to be manually released
+		 */
+		public final <T> Tracked<T> track(T content) {
+			Tracked<T> tracked = new Tracked<>(content);
 			tracker.add(tracked);
 			return tracked;
 		}
@@ -162,44 +176,97 @@ public class MemoryUtils {
 	 * Note that {@link AssertionsUtils#installAssertJTestRepresentation()}'s AssertJ {@link org.assertj.core.presentation.Representation}
 	 * recognizes this class.
 	 */
-	public static final class Tracked extends AtomicBoolean {
+	public static final class Tracked<T> extends AtomicInteger {
 
 		/**
 		 * A pre-released {@link Tracked} instance for convenience in some tests.
 		 */
-		public static final Tracked RELEASED = new Tracked("RELEASED", true);
+		public static final Tracked<String> RELEASED = new Tracked<>("RELEASED", true);
 
 		/**
 		 * Check if an arbitrary object is a {@link Tracked}, and if so release it.
 		 *
 		 * @param t the arbitrary object
 		 */
-	    public static void safeRelease(Object t) {
-	        if (t instanceof Tracked) {
-	            ((Tracked) t).release();
-	        }
-	    }
+		public static void safeRelease(@Nullable Object t) {
+			if (t instanceof Tracked && !((Tracked<?>) t).isReleased()) {
+				((Tracked<?>) t).release();
+			}
+		}
 
 		/**
-		 * An identifier for the tracked object, which can help debugging when tests fail.
+		 * The content of the {@link Tracked} object.
 		 */
-		public final String identifier;
+		public final T content;
 
-	    Tracked(String identifier) {
-	        this.identifier = identifier;
-	    }
+		/**
+		 * Prefer using {@link OffHeapDetector#track(String)} or {@link OffHeapDetector#track(Object)}.
+		 *
+		 * @param content the meaningful content of the tracked object
+		 */
+		public Tracked(T content) {
+			this.content = content;
+			set(1);
+		}
 
-	    Tracked(String identifier, boolean preReleased) {
-	    	this.identifier = identifier;
-	    	set(preReleased);
-	    }
+		/**
+		 * Create a {@link Tracked} object with the given content. For test purposes,
+		 * the tracked object can be marked as already {@link #release() released}.
+		 *
+		 * @param content the content of the tracked object
+		 * @param preReleased true if the object must be marked as already released, false otherwise
+		 */
+		public Tracked(T content, boolean preReleased) {
+			this.content = content;
+			set(preReleased ? 0 : 1);
+		}
+
+		/**
+		 * Create a {@link Tracked} object with the given content. For test purposes,
+		 * the tracked object reference counter can be pre-set, potentially marking it as
+		 * as already {@link #release() released}.
+		 *
+		 * @param content the content of the tracked object
+		 * @param refCount 0 if the object must be marked as already released, a positive int otherwise
+		 */
+		public Tracked(T content, int refCount) {
+			this.content = content;
+			set(refCount);
+		}
+
+		/**
+		 * Retain this {@link Tracked} object, increasing its reference counter.
+		 * This operation fails if the object is already {@link #release() released},
+		 * in which case it returns false.
+		 *
+		 * @return true if the reference count could be incremented, false if already released
+		 */
+		public boolean retain() {
+			for (;;) {
+				int v = get();
+				if (v == 0) { //can compete with
+					return false;
+				}
+				if (compareAndSet(v, v+1)) {
+					return true;
+				}
+			}
+		}
 
 		/**
 		 * Release this {@link Tracked} object.
 		 */
 		public void release() {
-	        set(true);
-	    }
+			for (;;) {
+				int v = get();
+				if (v == 0) {
+					return;
+				}
+				if (compareAndSet(v, v-1)) {
+					return;
+				}
+			}
+		}
 
 		/**
 		 * Check if this {@link Tracked} object has been released.
@@ -207,31 +274,35 @@ public class MemoryUtils {
 		 * @return true if released, false otherwise
 		 */
 		public boolean isReleased() {
-	        return get();
-	    }
+			return get() <= 0;
+		}
 
-	    @Override
-	    public boolean equals(Object o) {
-	        if (this == o) return true;
-	        if (o == null || getClass() != o.getClass()) return false;
+		public T getContent() {
+			return this.content;
+		}
 
-	        Tracked tracked = (Tracked) o;
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
 
-	        return identifier.equals(tracked.identifier);
-	    }
+			Tracked<?> tracked = (Tracked<?>) o;
 
-	    @Override
-	    public int hashCode() {
-	        return identifier.hashCode();
-	    }
+			return content.equals(tracked.content);
+		}
 
-	    //NOTE: AssertJ has a special representation of AtomicBooleans, so we override it in AssertionsUtils
-	    @Override
-	    public String toString() {
-	        return "Tracked{" +
-	                " id=" + identifier +
-	                " released=" + get() +
-	                " }";
-	    }
+		@Override
+		public int hashCode() {
+			return content.hashCode();
+		}
+
+		//NOTE: AssertJ has a special representation of AtomicBooleans, so we override it in AssertionsUtils
+		@Override
+		public String toString() {
+			return "Tracked{" +
+					" content=" + content +
+					" refCount=" + get() +
+					(get() == 0 ? " (released) }" : " }");
+		}
 	}
 }

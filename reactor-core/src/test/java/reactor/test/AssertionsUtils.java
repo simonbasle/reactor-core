@@ -16,7 +16,7 @@
 
 package reactor.test;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.presentation.StandardRepresentation;
@@ -44,11 +44,11 @@ public class AssertionsUtils {
 
 	private static final StandardRepresentation REACTOR_CORE_REPRESENTATION = new StandardRepresentation() {
 		@Override
-		protected String toStringOf(AtomicBoolean atomicBoolean) {
-			if (atomicBoolean instanceof MemoryUtils.Tracked) {
-				return atomicBoolean.toString();
+		protected String toStringOf(AtomicInteger atomic) {
+			if (atomic instanceof MemoryUtils.Tracked) {
+				return atomic.toString();
 			}
-			return super.toStringOf(atomicBoolean);
+			return super.toStringOf(atomic);
 		}
 
 		@Override
