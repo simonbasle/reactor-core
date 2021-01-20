@@ -104,7 +104,8 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 		Throwable lastFailure = null;
 		final ContextView retryContext;
 
-		Context context;
+		Context originalDownstreamContext;
+		Context fullContext;
 
 		volatile int wip;
 		static final AtomicIntegerFieldUpdater<RetryWhenMainSubscriber> WIP =
@@ -120,8 +121,9 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
-			this.context = actual.currentContext();
+			this.originalDownstreamContext = actual.currentContext();
 			this.retryContext = retryContext;
+			this.fullContext = this.originalDownstreamContext.putAll(this.retryContext);
 		}
 
 		@Override
@@ -147,7 +149,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return this.context;
+			return fullContext;
 		}
 
 		@Override
@@ -209,7 +211,7 @@ final class FluxRetryWhen<T> extends InternalFluxOperator<T, T> {
 					//flow that emit a Context as a trigger for the re-subscription are
 					//used to REPLACE the currentContext()
 					if (trigger instanceof ContextView) {
-						this.context = this.context.putAll((ContextView) trigger);
+						this.originalDownstreamContext = this.originalDownstreamContext.putAll((ContextView) trigger);
 					}
 
 					source.subscribe(this);

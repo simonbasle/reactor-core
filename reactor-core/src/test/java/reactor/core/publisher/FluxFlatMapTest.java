@@ -1791,6 +1791,19 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
+	public void errorModeContinueLargerThanConcurrencySourceMappedCallableFails_noFusion() {
+		AtomicInteger continued = new AtomicInteger();
+		Flux.range(1, 500)
+		    .flatMap(v -> Flux.error(new IllegalStateException("boom #" + v)).hide(), 203)
+		    .onErrorContinue(IllegalStateException.class, (ex, elem) -> continued.incrementAndGet())
+		    .as(StepVerifier::create)
+		    .expectComplete()
+		    .verify(Duration.ofSeconds(1));
+
+		assertThat(continued).hasValue(500);
+	}
+
+	@Test
 	public void noWrappingOfCheckedExceptions() {
 		Flux.just("single")
 		    .flatMap(x -> Mono.error(new NoSuchMethodException()))
