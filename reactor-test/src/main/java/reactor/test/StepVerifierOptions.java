@@ -21,7 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import reactor.core.publisher.Signal;
 import reactor.test.ValueFormatters.Extractor;
 import reactor.test.ValueFormatters.ToStringConverter;
@@ -58,7 +57,7 @@ public class StepVerifierOptions {
 		return new StepVerifierOptions();
 	}
 
-	private StepVerifierOptions() { } //disable constructor
+	private StepVerifierOptions() {} //disable constructor
 
 	/**
 	 * Activate or deactivate the {@link StepVerifier} check of request amount
@@ -116,8 +115,7 @@ public class StepVerifierOptions {
 	 * custom formatting
 	 * @return this instance, to continue setting the options
 	 */
-	public StepVerifierOptions valueFormatter(
-			@Nullable ToStringConverter valueFormatter) {
+	public StepVerifierOptions valueFormatter(@Nullable ToStringConverter valueFormatter) {
 		this.objectFormatter = valueFormatter;
 		return this;
 	}
@@ -166,9 +164,15 @@ public class StepVerifierOptions {
 		ArrayList<Extractor<?>> copy = new ArrayList<>(extractorMap.size() + 3);
 
 		copy.addAll(extractorMap.values());
-		if (!extractorMap.containsKey(Signal.class)) copy.add(ValueFormatters.signalExtractor());
-		if (!extractorMap.containsKey(Iterable.class)) copy.add(ValueFormatters.iterableExtractor());
-		if (!extractorMap.containsKey(Object[].class)) copy.add(ValueFormatters.arrayExtractor(Object[].class));
+		if (!extractorMap.containsKey(Signal.class)) copy.add(
+			ValueFormatters.signalExtractor()
+		);
+		if (!extractorMap.containsKey(Iterable.class)) copy.add(
+			ValueFormatters.iterableExtractor()
+		);
+		if (!extractorMap.containsKey(Object[].class)) copy.add(
+			ValueFormatters.arrayExtractor(Object[].class)
+		);
 		return copy;
 	}
 
@@ -179,7 +183,9 @@ public class StepVerifierOptions {
 	 * @param vtsLookup the supplier of {@link VirtualTimeScheduler} to use.
 	 * @return this instance, to continue setting the options.
 	 */
-	public StepVerifierOptions virtualTimeSchedulerSupplier(Supplier<? extends VirtualTimeScheduler> vtsLookup) {
+	public StepVerifierOptions virtualTimeSchedulerSupplier(
+		Supplier<? extends VirtualTimeScheduler> vtsLookup
+	) {
 		this.vtsLookup = vtsLookup;
 		return this;
 	}

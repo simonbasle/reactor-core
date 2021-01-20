@@ -19,7 +19,6 @@ package reactor.test;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Function;
-
 import reactor.util.annotation.Nullable;
 
 /**
@@ -30,24 +29,27 @@ import reactor.util.annotation.Nullable;
  */
 final class MessageFormatter {
 
-	private static final String                            EMPTY = "";
+	private static final String EMPTY = "";
 
 	final String scenarioPrefix;
+
 	@Nullable
 	final ValueFormatters.ToStringConverter valueFormatter;
+
 	@Nullable
 	final Collection<ValueFormatters.Extractor<?>> extractors;
 
-	MessageFormatter(@Nullable final String scenarioName,
-			@Nullable ValueFormatters.ToStringConverter valueFormatter,
-			@Nullable Collection<ValueFormatters.Extractor<?>> extractors) {
+	MessageFormatter(
+		@Nullable final String scenarioName,
+		@Nullable ValueFormatters.ToStringConverter valueFormatter,
+		@Nullable Collection<ValueFormatters.Extractor<?>> extractors
+	) {
 		if (scenarioName == null || scenarioName.isEmpty()) {
 			scenarioPrefix = EMPTY;
-		}
-		else {
+		} else {
 			scenarioPrefix = "[" + scenarioName + "] ";
 		}
-		this.valueFormatter =  valueFormatter;
+		this.valueFormatter = valueFormatter;
 		this.extractors = extractors;
 	}
 
@@ -60,13 +62,15 @@ final class MessageFormatter {
 	 * @param args the optional values for the placeholders in msg
 	 * @return an {@link AssertionError} with a standardized message potentially prefixed with the associated scenario name
 	 */
-	AssertionError fail(@Nullable DefaultStepVerifierBuilder.Event<?> event, String msg, Object... args) {
+	AssertionError fail(
+		@Nullable DefaultStepVerifierBuilder.Event<?> event,
+		String msg,
+		Object... args
+	) {
 		String prefix;
-		if (event != null && event.getDescription()
-		                          .length() > 0) {
+		if (event != null && event.getDescription().length() > 0) {
 			prefix = String.format("expectation \"%s\" failed (", event.getDescription());
-		}
-		else {
+		} else {
 			prefix = "expectation failed (";
 		}
 
@@ -83,8 +87,11 @@ final class MessageFormatter {
 	 * @return an {@link AssertionError} with a standardized message potentially prefixed with the associated scenario name,
 	 * wrapped in an {@link Optional}
 	 */
-	Optional<AssertionError> failOptional(@Nullable DefaultStepVerifierBuilder.Event<?> event, String msg,
-			Object... args) {
+	Optional<AssertionError> failOptional(
+		@Nullable DefaultStepVerifierBuilder.Event<?> event,
+		String msg,
+		Object... args
+	) {
 		return Optional.of(fail(event, msg, args));
 	}
 
@@ -151,7 +158,10 @@ final class MessageFormatter {
 	 */
 	String format(String msg, Object... args) {
 		if (valueFormatter != null) {
-			return String.format(msg, ValueFormatters.convertVarArgs(valueFormatter, extractors, args));
+			return String.format(
+				msg,
+				ValueFormatters.convertVarArgs(valueFormatter, extractors, args)
+			);
 		}
 		return String.format(msg, args);
 	}

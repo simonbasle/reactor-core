@@ -25,8 +25,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -87,7 +85,6 @@ import reactor.util.function.Tuple2;
  * @author Simon Baslé
  */
 public interface StepVerifier {
-
 	/**
 	 * Default verification timeout (see {@link #verify()}) is "no timeout".
 	 *
@@ -109,7 +106,7 @@ public interface StepVerifier {
 	 */
 	static void setDefaultTimeout(@Nullable Duration timeout) {
 		DefaultStepVerifierBuilder.defaultVerifyTimeout =
-				timeout == null ? DEFAULT_VERIFY_TIMEOUT : timeout;
+			timeout == null ? DEFAULT_VERIFY_TIMEOUT : timeout;
 	}
 
 	/**
@@ -162,7 +159,10 @@ public interface StepVerifier {
 	 *
 	 * @return a builder for expectation declaration and ultimately verification.
 	 */
-	static <T> FirstStep<T> create(Publisher<? extends T> publisher, StepVerifierOptions options) {
+	static <T> FirstStep<T> create(
+		Publisher<? extends T> publisher,
+		StepVerifierOptions options
+	) {
 		return DefaultStepVerifierBuilder.newVerifier(options, () -> publisher);
 	}
 
@@ -189,7 +189,9 @@ public interface StepVerifier {
 	 *
 	 * @return a builder for expectation declaration and ultimately verification.
 	 */
-	static <T> FirstStep<T> withVirtualTime(Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
+	static <T> FirstStep<T> withVirtualTime(
+		Supplier<? extends Publisher<? extends T>> scenarioSupplier
+	) {
 		return withVirtualTime(scenarioSupplier, Long.MAX_VALUE);
 	}
 
@@ -217,9 +219,15 @@ public interface StepVerifier {
 	 *
 	 * @return a builder for expectation declaration and ultimately verification.
 	 */
-	static <T> FirstStep<T> withVirtualTime(Supplier<? extends Publisher<? extends T>> scenarioSupplier,
-			long n) {
-		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.getOrSet(true), n);
+	static <T> FirstStep<T> withVirtualTime(
+		Supplier<? extends Publisher<? extends T>> scenarioSupplier,
+		long n
+	) {
+		return withVirtualTime(
+			scenarioSupplier,
+			() -> VirtualTimeScheduler.getOrSet(true),
+			n
+		);
 	}
 
 	/**
@@ -249,12 +257,17 @@ public interface StepVerifier {
 	 * @return a builder for expectation declaration and ultimately verification.
 	 */
 	static <T> FirstStep<T> withVirtualTime(
-			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
-			Supplier<? extends VirtualTimeScheduler> vtsLookup,
-			long n) {
-		return withVirtualTime(scenarioSupplier, StepVerifierOptions.create()
+		Supplier<? extends Publisher<? extends T>> scenarioSupplier,
+		Supplier<? extends VirtualTimeScheduler> vtsLookup,
+		long n
+	) {
+		return withVirtualTime(
+			scenarioSupplier,
+			StepVerifierOptions
+				.create()
 				.initialRequest(n)
-				.virtualTimeSchedulerSupplier(vtsLookup));
+				.virtualTimeSchedulerSupplier(vtsLookup)
+		);
 	}
 
 	/**
@@ -284,14 +297,14 @@ public interface StepVerifier {
 	 * @return a builder for expectation declaration and ultimately verification.
 	 */
 	static <T> FirstStep<T> withVirtualTime(
-			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
-			StepVerifierOptions options) {
+		Supplier<? extends Publisher<? extends T>> scenarioSupplier,
+		StepVerifierOptions options
+	) {
 		DefaultStepVerifierBuilder.checkPositive(options.getInitialRequest());
 		Objects.requireNonNull(options.getVirtualTimeSchedulerSupplier(), "vtsLookup");
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
-		return DefaultStepVerifierBuilder.newVerifier(options,
-				scenarioSupplier);
+		return DefaultStepVerifierBuilder.newVerifier(options, scenarioSupplier);
 	}
 
 	/**
@@ -383,7 +396,6 @@ public interface StepVerifier {
 	 * Define a builder for terminal states.
 	 */
 	interface LastStep {
-
 		/**
 		 * Expect an error and consume with the given consumer. Any
 		 * {@code AssertionError}s thrown by the consumer will be rethrown
@@ -486,7 +498,6 @@ public interface StepVerifier {
 		 * @see Subscription#cancel()
 		 */
 		StepVerifier thenCancel();
-
 
 		/**
 		 * Trigger the {@link #verify() verification}, expecting an unspecified error
@@ -618,7 +629,6 @@ public interface StepVerifier {
 		 *
 		 */
 		Duration verifyComplete();
-
 	}
 
 	/**
@@ -627,7 +637,6 @@ public interface StepVerifier {
 	 * @param <T> the type of values that the subscriber contains
 	 */
 	interface Step<T> extends LastStep {
-
 		/**
 		 * Set a description for the previous verification step. Choosing
 		 * a unique and descriptive name can make assertion errors easier to
@@ -968,7 +977,6 @@ public interface StepVerifier {
 	 * @param <T> the type of values that the subscriber contains
 	 */
 	interface FirstStep<T> extends Step<T> {
-
 		/**
 		 * Expect the source {@link Publisher} to run with Reactor Fusion flow
 		 * optimization. It will be requesting {@link Fuseable#ANY} fusion mode.
@@ -1047,7 +1055,6 @@ public interface StepVerifier {
 	 * Exposes post-verification state assertions.
 	 */
 	interface Assertions {
-
 		/**
 		 * Assert that the tested publisher has dropped at least one element to the
 		 * {@link Hooks#onNextDropped(Consumer)} hook.
@@ -1218,14 +1225,18 @@ public interface StepVerifier {
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * once or more, and assert the errors and optionally associated data as a collection.
 		 */
-		Assertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Optional<Throwable>, Optional<?>>>> errorsConsumer);
+		Assertions hasOperatorErrorsSatisfying(
+			Consumer<Collection<Tuple2<Optional<Throwable>, Optional<?>>>> errorsConsumer
+		);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * once or more, and check that the collection of errors and their optionally
 		 * associated data matches a predicate.
 		 */
-		Assertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Optional<Throwable>, Optional<?>>>> errorsConsumer);
+		Assertions hasOperatorErrorsMatching(
+			Predicate<Collection<Tuple2<Optional<Throwable>, Optional<?>>>> errorsConsumer
+		);
 
 		/**
 		 * Assert that the whole verification took strictly less than the provided
@@ -1250,7 +1261,6 @@ public interface StepVerifier {
 	 * @param <T> the type of the sequence
 	 */
 	interface ContextExpectations<T> {
-
 		/**
 		 * Check that the propagated {@link Context} contains a value for the given key.
 		 *

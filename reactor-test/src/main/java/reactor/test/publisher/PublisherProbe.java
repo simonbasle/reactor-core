@@ -17,7 +17,6 @@
 package reactor.test.publisher;
 
 import java.util.concurrent.atomic.AtomicLongArray;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
@@ -46,13 +45,14 @@ import reactor.test.publisher.TestPublisher.Violation;
  * @author Simon Baslé
  */
 public interface PublisherProbe<T> {
-
 	/**
 	 * Check that the probe was never subscribed to, or throw an {@link AssertionError}.
 	 */
 	default void assertWasNotSubscribed() {
 		if (wasSubscribed()) {
-			throw new AssertionError("PublisherProbe should not have been subscribed but it was");
+			throw new AssertionError(
+				"PublisherProbe should not have been subscribed but it was"
+			);
 		}
 	}
 
@@ -61,7 +61,9 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasSubscribed() {
 		if (!wasSubscribed()) {
-			throw new AssertionError("PublisherProbe should have been subscribed but it wasn't");
+			throw new AssertionError(
+				"PublisherProbe should have been subscribed but it wasn't"
+			);
 		}
 	}
 
@@ -70,7 +72,9 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasNotCancelled() {
 		if (wasCancelled()) {
-			throw new AssertionError("PublisherProbe should not have been cancelled but it was");
+			throw new AssertionError(
+				"PublisherProbe should not have been cancelled but it was"
+			);
 		}
 	}
 
@@ -88,7 +92,9 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasNotRequested() {
 		if (wasRequested()) {
-			throw new AssertionError("PublisherProbe should not have been requested but it was");
+			throw new AssertionError(
+				"PublisherProbe should not have been requested but it was"
+			);
 		}
 	}
 
@@ -173,8 +179,8 @@ public interface PublisherProbe<T> {
 	}
 
 	final class DefaultPublisherProbe<T>
-			extends AtomicLongArray
-			implements PublisherProbe<T> {
+		extends AtomicLongArray
+		implements PublisherProbe<T> {
 
 		private static final int SUBSCRIBED = 0;
 		private static final int CANCELLED = 1;
@@ -190,18 +196,20 @@ public interface PublisherProbe<T> {
 
 		@Override
 		public Mono<T> mono() {
-			return Mono.from(delegate)
-			           .doOnSubscribe(sub -> incrementAndGet(SUBSCRIBED))
-			           .doOnCancel(() -> incrementAndGet(CANCELLED))
-			           .doOnRequest(l -> incrementAndGet(REQUESTED));
+			return Mono
+				.from(delegate)
+				.doOnSubscribe(sub -> incrementAndGet(SUBSCRIBED))
+				.doOnCancel(() -> incrementAndGet(CANCELLED))
+				.doOnRequest(l -> incrementAndGet(REQUESTED));
 		}
 
 		@Override
 		public Flux<T> flux() {
-			return Flux.from(delegate)
-			           .doOnSubscribe(sub -> incrementAndGet(SUBSCRIBED))
-			           .doOnCancel(() -> incrementAndGet(CANCELLED))
-			           .doOnRequest(l -> incrementAndGet(REQUESTED));
+			return Flux
+				.from(delegate)
+				.doOnSubscribe(sub -> incrementAndGet(SUBSCRIBED))
+				.doOnCancel(() -> incrementAndGet(CANCELLED))
+				.doOnRequest(l -> incrementAndGet(REQUESTED));
 		}
 
 		@Override

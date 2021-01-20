@@ -16,14 +16,13 @@
 
 package reactor.test;
 
-import java.time.Duration;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
-
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class StepVerifierDefaultTimeoutTests {
 
@@ -40,65 +39,80 @@ public class StepVerifierDefaultTimeoutTests {
 	@Test
 	public void verifyUsesDefaultTimeout() {
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() ->
-						StepVerifier.create(Mono.delay(Duration.ofMillis(150)))
-						            .expectComplete()
-						            .verify())
-				.withMessageStartingWith("VerifySubscriber timed out");
+			.isThrownBy(
+				() ->
+					StepVerifier
+						.create(Mono.delay(Duration.ofMillis(150)))
+						.expectComplete()
+						.verify()
+			)
+			.withMessageStartingWith("VerifySubscriber timed out");
 	}
 
 	@Test
 	public void verifyThenAssertUsesDefaultTimeout() {
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() ->
-						StepVerifier.create(Mono.delay(Duration.ofMillis(150)))
-						            .expectComplete()
-						            .verifyThenAssertThat())
-				.withMessageStartingWith("VerifySubscriber timed out");
+			.isThrownBy(
+				() ->
+					StepVerifier
+						.create(Mono.delay(Duration.ofMillis(150)))
+						.expectComplete()
+						.verifyThenAssertThat()
+			)
+			.withMessageStartingWith("VerifySubscriber timed out");
 	}
 
 	@Test
 	public void verifyCompleteUsesDefaultTimeout() {
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() ->
-						StepVerifier.create(Mono.delay(Duration.ofMillis(150)))
-						            .verifyComplete())
-				.withMessageStartingWith("VerifySubscriber timed out");
+			.isThrownBy(
+				() -> StepVerifier.create(Mono.delay(Duration.ofMillis(150))).verifyComplete()
+			)
+			.withMessageStartingWith("VerifySubscriber timed out");
 	}
 
 	@Test
 	public void verifyErrorUsesDefaultTimeout() {
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() ->
-						StepVerifier.create(Mono.delay(Duration.ofMillis(150)))
-						            .verifyError())
-				.withMessageStartingWith("VerifySubscriber timed out");
+			.isThrownBy(
+				() -> StepVerifier.create(Mono.delay(Duration.ofMillis(150))).verifyError()
+			)
+			.withMessageStartingWith("VerifySubscriber timed out");
 	}
 
 	@Test
 	public void verifyErrorMessageUsesDefaultTimeout() {
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() ->
-						StepVerifier.create(Mono.delay(Duration.ofMillis(150)))
-						            .verifyErrorMessage("ignored"))
-				.withMessageStartingWith("VerifySubscriber timed out");
+			.isThrownBy(
+				() ->
+					StepVerifier
+						.create(Mono.delay(Duration.ofMillis(150)))
+						.verifyErrorMessage("ignored")
+			)
+			.withMessageStartingWith("VerifySubscriber timed out");
 	}
 
 	@Test
 	public void verifyErrorMatchesUsesDefaultTimeout() {
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() ->
-						StepVerifier.create(Mono.delay(Duration.ofMillis(150)))
-						            .verifyErrorMatches(ignore -> true))
-				.withMessageStartingWith("VerifySubscriber timed out");
+			.isThrownBy(
+				() ->
+					StepVerifier
+						.create(Mono.delay(Duration.ofMillis(150)))
+						.verifyErrorMatches(ignore -> true)
+			)
+			.withMessageStartingWith("VerifySubscriber timed out");
 	}
 
 	@Test
 	public void verifyErrorClassUsesDefaultTimeout() {
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() ->
-						StepVerifier.create(Mono.delay(Duration.ofMillis(150)))
-						            .verifyError(NullPointerException.class))
-				.withMessageStartingWith("VerifySubscriber timed out");
+			.isThrownBy(
+				() ->
+					StepVerifier
+						.create(Mono.delay(Duration.ofMillis(150)))
+						.verifyError(NullPointerException.class)
+			)
+			.withMessageStartingWith("VerifySubscriber timed out");
 	}
 }

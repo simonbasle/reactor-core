@@ -16,8 +16,10 @@
 
 package reactor.test.publisher;
 
-import java.util.concurrent.atomic.AtomicReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -27,14 +29,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-
 public class PublisherProbeTest {
 
 	private static class TestControlFlow {
 
-		private final Mono<Void>   a;
+		private final Mono<Void> a;
 		private final Mono<String> b;
 
 		TestControlFlow(Mono<Void> a, Mono<String> b) {
@@ -44,8 +43,8 @@ public class PublisherProbeTest {
 
 		Mono<Void> toTest(Mono<String> monoOfPrincipal) {
 			return monoOfPrincipal
-					.switchIfEmpty(thisReturnsMonoVoid().then(Mono.empty()))
-					.flatMap(this::thisReturnsMonoVoid);
+				.switchIfEmpty(thisReturnsMonoVoid().then(Mono.empty()))
+				.flatMap(this::thisReturnsMonoVoid);
 		}
 
 		private Mono<Void> thisReturnsMonoVoid() {
@@ -55,7 +54,6 @@ public class PublisherProbeTest {
 		private Mono<Void> thisReturnsMonoVoid(String p) {
 			return this.b.then();
 		}
-
 	}
 
 	@Test
@@ -65,8 +63,7 @@ public class PublisherProbeTest {
 
 		TestControlFlow t = new TestControlFlow(a.mono(), b.mono());
 
-		StepVerifier.create(t.toTest(Mono.empty()))
-		            .verifyComplete();
+		StepVerifier.create(t.toTest(Mono.empty())).verifyComplete();
 
 		assertThat(a.wasSubscribed()).isTrue();
 		assertThat(b.wasSubscribed()).isFalse();
@@ -82,8 +79,7 @@ public class PublisherProbeTest {
 
 		TestControlFlow t = new TestControlFlow(a.mono(), b.mono());
 
-		StepVerifier.create(t.toTest(Mono.just("principal")))
-		            .verifyComplete();
+		StepVerifier.create(t.toTest(Mono.just("principal"))).verifyComplete();
 
 		a.assertWasNotSubscribed();
 		b.assertWasSubscribed();
@@ -99,8 +95,7 @@ public class PublisherProbeTest {
 
 		TestControlFlow t = new TestControlFlow(a.mono(), b.mono());
 
-		StepVerifier.create(t.toTest(Mono.empty()))
-		            .verifyComplete();
+		StepVerifier.create(t.toTest(Mono.empty())).verifyComplete();
 
 		assertThat(a.wasSubscribed()).isTrue();
 		assertThat(b.wasSubscribed()).isFalse();
@@ -116,8 +111,7 @@ public class PublisherProbeTest {
 
 		TestControlFlow t = new TestControlFlow(a.mono(), b.mono());
 
-		StepVerifier.create(t.toTest(Mono.just("principal")))
-		            .verifyComplete();
+		StepVerifier.create(t.toTest(Mono.just("principal"))).verifyComplete();
 
 		assertThat(a.wasSubscribed()).isFalse();
 		assertThat(b.wasSubscribed()).isTrue();
@@ -156,8 +150,8 @@ public class PublisherProbeTest {
 		PublisherProbe<Void> probe = PublisherProbe.empty();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasSubscribed)
-				.withMessage("PublisherProbe should have been subscribed but it wasn't");
+			.isThrownBy(probe::assertWasSubscribed)
+			.withMessage("PublisherProbe should have been subscribed but it wasn't");
 
 		probe.mono().subscribe();
 
@@ -173,8 +167,8 @@ public class PublisherProbeTest {
 		probe.mono().subscribe();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasNotSubscribed)
-				.withMessage("PublisherProbe should not have been subscribed but it was");
+			.isThrownBy(probe::assertWasNotSubscribed)
+			.withMessage("PublisherProbe should not have been subscribed but it was");
 	}
 
 	@Test
@@ -195,8 +189,8 @@ public class PublisherProbeTest {
 		Disposable d = probe.mono().subscribe();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasCancelled)
-				.withMessage("PublisherProbe should have been cancelled but it wasn't");
+			.isThrownBy(probe::assertWasCancelled)
+			.withMessage("PublisherProbe should have been cancelled but it wasn't");
 
 		d.dispose();
 
@@ -213,8 +207,8 @@ public class PublisherProbeTest {
 		d.dispose();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasNotCancelled)
-				.withMessage("PublisherProbe should not have been cancelled but it was");
+			.isThrownBy(probe::assertWasNotCancelled)
+			.withMessage("PublisherProbe should not have been cancelled but it was");
 	}
 
 	@Test
@@ -237,8 +231,8 @@ public class PublisherProbeTest {
 		probe.mono().subscribe(null, null, null, sub::set);
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasRequested)
-				.withMessage("PublisherProbe should have been requested but it wasn't");
+			.isThrownBy(probe::assertWasRequested)
+			.withMessage("PublisherProbe should have been requested but it wasn't");
 
 		sub.get().request(3L);
 
@@ -256,8 +250,8 @@ public class PublisherProbeTest {
 		sub.get().request(3L);
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasNotRequested)
-				.withMessage("PublisherProbe should not have been requested but it was");
+			.isThrownBy(probe::assertWasNotRequested)
+			.withMessage("PublisherProbe should not have been requested but it was");
 	}
 
 	@Test
@@ -290,8 +284,8 @@ public class PublisherProbeTest {
 		PublisherProbe<Void> probe = PublisherProbe.empty();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasSubscribed)
-				.withMessage("PublisherProbe should have been subscribed but it wasn't");
+			.isThrownBy(probe::assertWasSubscribed)
+			.withMessage("PublisherProbe should have been subscribed but it wasn't");
 
 		probe.flux().subscribe();
 
@@ -307,8 +301,8 @@ public class PublisherProbeTest {
 		probe.flux().subscribe();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasNotSubscribed)
-				.withMessage("PublisherProbe should not have been subscribed but it was");
+			.isThrownBy(probe::assertWasNotSubscribed)
+			.withMessage("PublisherProbe should not have been subscribed but it was");
 	}
 
 	@Test
@@ -329,8 +323,8 @@ public class PublisherProbeTest {
 		Disposable d = probe.flux().subscribe();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasCancelled)
-				.withMessage("PublisherProbe should have been cancelled but it wasn't");
+			.isThrownBy(probe::assertWasCancelled)
+			.withMessage("PublisherProbe should have been cancelled but it wasn't");
 
 		d.dispose();
 
@@ -347,8 +341,8 @@ public class PublisherProbeTest {
 		d.dispose();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasNotCancelled)
-				.withMessage("PublisherProbe should not have been cancelled but it was");
+			.isThrownBy(probe::assertWasNotCancelled)
+			.withMessage("PublisherProbe should not have been cancelled but it was");
 	}
 
 	@Test
@@ -371,8 +365,8 @@ public class PublisherProbeTest {
 		probe.flux().subscribeWith(subscriptionCaptorVia(sub));
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasRequested)
-				.withMessage("PublisherProbe should have been requested but it wasn't");
+			.isThrownBy(probe::assertWasRequested)
+			.withMessage("PublisherProbe should have been requested but it wasn't");
 
 		sub.get().request(3L);
 
@@ -390,8 +384,8 @@ public class PublisherProbeTest {
 		sub.get().request(3L);
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(probe::assertWasNotRequested)
-				.withMessage("PublisherProbe should not have been requested but it was");
+			.isThrownBy(probe::assertWasNotRequested)
+			.withMessage("PublisherProbe should not have been requested but it was");
 	}
 
 	private <T> Subscriber<T> subscriptionCaptorVia(AtomicReference<Subscription> ref) {

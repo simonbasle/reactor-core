@@ -16,6 +16,10 @@
 
 package reactor.test.publisher;
 
+import static reactor.test.publisher.TestPublisher.Violation.ALLOW_NULL;
+import static reactor.test.publisher.TestPublisher.Violation.DEFER_CANCELLATION;
+import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -24,7 +28,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.stream.Stream;
-
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
@@ -33,10 +36,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.util.annotation.Nullable;
-
-import static reactor.test.publisher.TestPublisher.Violation.ALLOW_NULL;
-import static reactor.test.publisher.TestPublisher.Violation.DEFER_CANCELLATION;
-import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 
 /**
  * A cold implementation of a {@link TestPublisher}.
@@ -67,12 +66,16 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	volatile ColdTestPublisherSubscription<T>[] subscribers = EMPTY;
 
 	volatile int cancelCount;
-	static final AtomicIntegerFieldUpdater<ColdTestPublisher> CANCEL_COUNT =
-			AtomicIntegerFieldUpdater.newUpdater(ColdTestPublisher.class, "cancelCount");
+	static final AtomicIntegerFieldUpdater<ColdTestPublisher> CANCEL_COUNT = AtomicIntegerFieldUpdater.newUpdater(
+		ColdTestPublisher.class,
+		"cancelCount"
+	);
 
 	volatile long subscribeCount;
-	static final AtomicLongFieldUpdater<ColdTestPublisher> SUBSCRIBED_COUNT =
-			AtomicLongFieldUpdater.newUpdater(ColdTestPublisher.class, "subscribeCount");
+	static final AtomicLongFieldUpdater<ColdTestPublisher> SUBSCRIBED_COUNT = AtomicLongFieldUpdater.newUpdater(
+		ColdTestPublisher.class,
+		"subscribeCount"
+	);
 
 	ColdTestPublisher(boolean errorOnOverflow, EnumSet<Violation> violations) {
 		this.errorOnOverflow = errorOnOverflow;
@@ -92,7 +95,6 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		ColdTestPublisher.SUBSCRIBED_COUNT.incrementAndGet(this);
 
 		s.onSubscribe(p); // will trigger drain() via request()
-
 	}
 
 	void add(ColdTestPublisherSubscription<T> s) {
@@ -150,7 +152,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 
 	static final class ColdTestPublisherSubscription<T> implements Subscription {
 
-		final Subscriber<? super T>                     actual;
+		final Subscriber<? super T> actual;
 		final Fuseable.ConditionalSubscriber<? super T> actualConditional;
 
 		final ColdTestPublisher<T> parent;
@@ -160,26 +162,31 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		volatile long requested;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ColdTestPublisherSubscription.class, "requested");
+		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription> REQUESTED = AtomicLongFieldUpdater.newUpdater(
+			ColdTestPublisherSubscription.class,
+			"requested"
+		);
 
 		volatile long wip;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription> WIP =
-				AtomicLongFieldUpdater.newUpdater(ColdTestPublisherSubscription.class, "wip");
+		static final AtomicLongFieldUpdater<ColdTestPublisherSubscription> WIP = AtomicLongFieldUpdater.newUpdater(
+			ColdTestPublisherSubscription.class,
+			"wip"
+		);
 
 		/** Where in the {@link ColdTestPublisher#values} buffer this subscription is at. */
 		int index;
 
-
 		@SuppressWarnings("unchecked")
-		ColdTestPublisherSubscription(Subscriber<? super T> actual, ColdTestPublisher<T> parent) {
+		ColdTestPublisherSubscription(
+			Subscriber<? super T> actual,
+			ColdTestPublisher<T> parent
+		) {
 			this.actual = actual;
-			if(actual instanceof Fuseable.ConditionalSubscriber){
+			if (actual instanceof Fuseable.ConditionalSubscriber) {
 				this.actualConditional = (Fuseable.ConditionalSubscriber<? super T>) actual;
-			}
-			else {
+			} else {
 				this.actualConditional = null;
 			}
 			this.parent = parent;
@@ -199,7 +206,10 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		public void cancel() {
 			if (!cancelled) {
 				ColdTestPublisher.CANCEL_COUNT.incrementAndGet(parent);
-				if (parent.violations.contains(DEFER_CANCELLATION) || parent.violations.contains(REQUEST_OVERFLOW)) {
+				if (
+					parent.violations.contains(DEFER_CANCELLATION) ||
+					parent.violations.contains(REQUEST_OVERFLOW)
+				) {
 					return;
 				}
 				cancelled = true;
@@ -211,7 +221,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 			if (WIP.getAndIncrement(this) > 0) {
 				return;
 			}
-			for (; ; ) {
+			for (;;) {
 				int i = index;
 				// Re-read the volatile 'requested' which could have grown via another thread
 				long r = requested;
@@ -260,8 +270,7 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 				//let's update the REQUESTED unless we're in fastpath
 				if (r != Long.MAX_VALUE) {
 					hasMoreRequest = REQUESTED.addAndGet(this, -emitted) > 0;
-				}
-				else {
+				} else {
 					hasMoreRequest = true;
 				}
 
@@ -275,7 +284,9 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 				//if the parent is configured to errorOnOverflow then we must terminate
 				if (hasMoreData && !hasMoreRequest && parent.errorOnOverflow) {
 					parent.remove(this);
-					actual.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
+					actual.onError(
+						Exceptions.failWithOverflow("Can't deliver value due to lack of requests")
+					);
 					return;
 				}
 
@@ -341,12 +352,11 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	@Override
 	public ColdTestPublisher<T> assertMinRequested(long n) {
 		ColdTestPublisherSubscription<T>[] subs = subscribers;
-		long minRequest = Stream.of(subs)
-		                        .mapToLong(s -> s.requested)
-		                        .min()
-		                        .orElse(0);
+		long minRequest = Stream.of(subs).mapToLong(s -> s.requested).min().orElse(0);
 		if (minRequest < n) {
-			throw new AssertionError("Expected smallest requested amount to be >= " + n + "; got " + minRequest);
+			throw new AssertionError(
+				"Expected smallest requested amount to be >= " + n + "; got " + minRequest
+			);
 		}
 		return this;
 	}
@@ -354,12 +364,11 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 	@Override
 	public ColdTestPublisher<T> assertMaxRequested(long n) {
 		ColdTestPublisherSubscription<T>[] subs = subscribers;
-		long maxRequest = Stream.of(subs)
-		                        .mapToLong(s -> s.requested)
-		                        .max()
-		                        .orElse(0);
+		long maxRequest = Stream.of(subs).mapToLong(s -> s.requested).max().orElse(0);
 		if (maxRequest > n) {
-			throw new AssertionError("Expected largest requested amount to be <= " + n + "; got " + maxRequest);
+			throw new AssertionError(
+				"Expected largest requested amount to be <= " + n + "; got " + maxRequest
+			);
 		}
 		return this;
 	}
@@ -467,5 +476,4 @@ final class ColdTestPublisher<T> extends TestPublisher<T> {
 		}
 		return this;
 	}
-
 }

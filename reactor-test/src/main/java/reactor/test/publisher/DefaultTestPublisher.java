@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -47,8 +46,10 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	volatile int cancelCount;
 
-	static final AtomicIntegerFieldUpdater<DefaultTestPublisher> CANCEL_COUNT =
-		AtomicIntegerFieldUpdater.newUpdater(DefaultTestPublisher.class, "cancelCount");
+	static final AtomicIntegerFieldUpdater<DefaultTestPublisher> CANCEL_COUNT = AtomicIntegerFieldUpdater.newUpdater(
+		DefaultTestPublisher.class,
+		"cancelCount"
+	);
 
 	Throwable error;
 
@@ -56,8 +57,10 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	volatile boolean wasRequested;
 
 	volatile long subscribeCount;
-	static final AtomicLongFieldUpdater<DefaultTestPublisher> SUBSCRIBED_COUNT =
-			AtomicLongFieldUpdater.newUpdater(DefaultTestPublisher.class, "subscribeCount");
+	static final AtomicLongFieldUpdater<DefaultTestPublisher> SUBSCRIBED_COUNT = AtomicLongFieldUpdater.newUpdater(
+		DefaultTestPublisher.class,
+		"subscribeCount"
+	);
 
 	final EnumSet<Violation> violations;
 
@@ -65,8 +68,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	volatile TestPublisherSubscription<T>[] subscribers = EMPTY;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<DefaultTestPublisher, TestPublisherSubscription[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(DefaultTestPublisher.class, TestPublisherSubscription[].class, "subscribers");
+	static final AtomicReferenceFieldUpdater<DefaultTestPublisher, TestPublisherSubscription[]> SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(
+		DefaultTestPublisher.class,
+		TestPublisherSubscription[].class,
+		"subscribers"
+	);
 
 	DefaultTestPublisher(Violation first, Violation... rest) {
 		this.violations = EnumSet.of(first, rest);
@@ -80,8 +86,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	public void subscribe(Subscriber<? super T> s) {
 		Objects.requireNonNull(s, "s");
 
-		TestPublisherSubscription<T>
-				p = new TestPublisherSubscription<>(s, this);
+		TestPublisherSubscription<T> p = new TestPublisherSubscription<>(s, this);
 		s.onSubscribe(p);
 		if (add(p)) {
 			if (p.cancelled) {
@@ -92,7 +97,6 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 			if (replayOnSubscribe != null) {
 				replayOnSubscribe.accept(this);
 			}
-
 		} else {
 			Throwable e = error;
 			if (e != null) {
@@ -116,7 +120,8 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 			}
 			int len = a.length;
 
-			@SuppressWarnings("unchecked") TestPublisherSubscription<T>[] b = new TestPublisherSubscription[len + 1];
+			@SuppressWarnings("unchecked")
+			TestPublisherSubscription<T>[] b = new TestPublisherSubscription[len + 1];
 			System.arraycopy(a, 0, b, 0, len);
 			b[len] = s;
 
@@ -171,7 +176,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	static final class TestPublisherSubscription<T> implements Subscription {
 
-		final Subscriber<? super T>                     actual;
+		final Subscriber<? super T> actual;
 		final Fuseable.ConditionalSubscriber<? super T> actualConditional;
 
 		final DefaultTestPublisher<T> parent;
@@ -181,17 +186,20 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		volatile long requested;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<TestPublisherSubscription>
-				REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(TestPublisherSubscription.class, "requested");
+		static final AtomicLongFieldUpdater<TestPublisherSubscription> REQUESTED = AtomicLongFieldUpdater.newUpdater(
+			TestPublisherSubscription.class,
+			"requested"
+		);
 
 		@SuppressWarnings("unchecked")
-		TestPublisherSubscription(Subscriber<? super T> actual, DefaultTestPublisher<T> parent) {
+		TestPublisherSubscription(
+			Subscriber<? super T> actual,
+			DefaultTestPublisher<T> parent
+		) {
 			this.actual = actual;
-			if(actual instanceof Fuseable.ConditionalSubscriber){
+			if (actual instanceof Fuseable.ConditionalSubscriber) {
 				this.actualConditional = (Fuseable.ConditionalSubscriber<? super T>) actual;
-			}
-			else {
+			} else {
 				this.actualConditional = null;
 			}
 			this.parent = parent;
@@ -209,7 +217,10 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		public void cancel() {
 			if (!cancelled) {
 				DefaultTestPublisher.CANCEL_COUNT.incrementAndGet(parent);
-				if (parent.violations.contains(Violation.CLEANUP_ON_TERMINATE)||parent.violations.contains(Violation.DEFER_CANCELLATION)) {
+				if (
+					parent.violations.contains(Violation.CLEANUP_ON_TERMINATE) ||
+					parent.violations.contains(Violation.DEFER_CANCELLATION)
+				) {
 					return;
 				}
 				cancelled = true;
@@ -224,10 +235,9 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 					parent.hasOverflown = true;
 				}
 				boolean sent;
-				if(actualConditional != null){
+				if (actualConditional != null) {
 					sent = actualConditional.tryOnNext(value);
-				}
-				else {
+				} else {
 					sent = true;
 					actual.onNext(value);
 				}
@@ -237,7 +247,9 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 				return;
 			}
 			parent.remove(this);
-			actual.onError(new IllegalStateException("Can't deliver value due to lack of requests"));
+			actual.onError(
+				new IllegalStateException("Can't deliver value due to lack of requests")
+			);
 		}
 
 		void onError(Throwable e) {
@@ -254,8 +266,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	public TestPublisher<T> replayOnSubscribe(Consumer<TestPublisher<T>> replay) {
 		if (replayOnSubscribe == null) {
 			replayOnSubscribe = replay;
-		}
-		else {
+		} else {
 			replayOnSubscribe = replayOnSubscribe.andThen(replay);
 		}
 		return this;
@@ -271,12 +282,12 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		return subscribeCount > 0;
 	}
 
-    @Override
-    public long subscribeCount() {
-        return subscribeCount;
-    }
+	@Override
+	public long subscribeCount() {
+		return subscribeCount;
+	}
 
-    @Override
+	@Override
 	public boolean wasCancelled() {
 		return cancelCount > 0;
 	}
@@ -290,8 +301,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	public Mono<T> mono() {
 		if (violations.isEmpty()) {
 			return Mono.from(this);
-		}
-		else {
+		} else {
 			return Mono.fromDirect(this);
 		}
 	}
@@ -299,12 +309,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	@Override
 	public DefaultTestPublisher<T> assertMinRequested(long n) {
 		TestPublisherSubscription<T>[] subs = subscribers;
-		long minRequest = Stream.of(subs)
-		                        .mapToLong(s -> s.requested)
-		                        .min()
-		                        .orElse(0);
+		long minRequest = Stream.of(subs).mapToLong(s -> s.requested).min().orElse(0);
 		if (minRequest < n) {
-			throw new AssertionError("Expected smallest requested amount to be >= " + n + "; got " + minRequest);
+			throw new AssertionError(
+				"Expected smallest requested amount to be >= " + n + "; got " + minRequest
+			);
 		}
 		return this;
 	}
@@ -312,12 +321,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	@Override
 	public DefaultTestPublisher<T> assertMaxRequested(long n) {
 		TestPublisherSubscription<T>[] subs = subscribers;
-		long maxRequest = Stream.of(subs)
-		                        .mapToLong(s -> s.requested)
-		                        .max()
-		                        .orElse(0);
+		long maxRequest = Stream.of(subs).mapToLong(s -> s.requested).max().orElse(0);
 		if (maxRequest > n) {
-			throw new AssertionError("Expected largest requested amount to be <= " + n + "; got " + maxRequest);
+			throw new AssertionError(
+				"Expected largest requested amount to be <= " + n + "; got " + maxRequest
+			);
 		}
 		return this;
 	}
@@ -433,5 +441,4 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		}
 		return this;
 	}
-
 }

@@ -15,10 +15,8 @@
  */
 package reactor.test.publisher;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Objects;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -66,7 +64,10 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * @param <T> the type of the publisher
 	 * @return the new noncompliant {@link TestPublisher}
 	 */
-	public static <T> TestPublisher<T> createNoncompliant(Violation first, Violation... rest) {
+	public static <T> TestPublisher<T> createNoncompliant(
+		Violation first,
+		Violation... rest
+	) {
 		return new DefaultTestPublisher<>(first, rest);
 	}
 
@@ -116,8 +117,15 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 * @param errorOnOverflow whether to throw an exception if there are more values than request (true) or buffer values until request becomes available (false)
 	 * @return the new {@link TestPublisher}
 	 */
-	public static <T> TestPublisher<T> createColdNonCompliant(boolean errorOnOverflow, Violation firstViolation, Violation... otherViolations) {
-		return new ColdTestPublisher<>(errorOnOverflow, EnumSet.of(firstViolation, otherViolations));
+	public static <T> TestPublisher<T> createColdNonCompliant(
+		boolean errorOnOverflow,
+		Violation firstViolation,
+		Violation... otherViolations
+	) {
+		return new ColdTestPublisher<>(
+			errorOnOverflow,
+			EnumSet.of(firstViolation, otherViolations)
+		);
 	}
 
 	/**
@@ -244,7 +252,10 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 */
 	@SafeVarargs
 	public final TestPublisher<T> next(@Nullable T first, T... rest) {
-		Objects.requireNonNull(rest, "rest array is null, please cast to T if null T required");
+		Objects.requireNonNull(
+			rest,
+			"rest array is null, please cast to T if null T required"
+		);
 		next(first);
 		for (T t : rest) {
 			next(t);
@@ -262,7 +273,10 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 	 */
 	@SafeVarargs
 	public final TestPublisher<T> emit(T... values) {
-		Objects.requireNonNull(values, "values array is null, please cast to T if null T required");
+		Objects.requireNonNull(
+			values,
+			"values array is null, please cast to T if null T required"
+		);
 		for (T t : values) {
 			next(t);
 		}
@@ -293,6 +307,6 @@ public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T
 		 * Allow the {@link TestPublisher} to ignore cancellation signals and continue
 		 * emitting signals as if the cancellation lost race against said signals.
 		 */
-		DEFER_CANCELLATION
+		DEFER_CANCELLATION,
 	}
 }

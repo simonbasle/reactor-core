@@ -19,7 +19,6 @@ package reactor.test.util;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.regex.Matcher;
-
 import reactor.util.Logger;
 import reactor.util.annotation.Nullable;
 
@@ -46,7 +45,7 @@ public class TestLogger implements Logger {
 		this.logCurrentThreadName = true;
 	}
 
-	public TestLogger(boolean logCurrentThreadName){
+	public TestLogger(boolean logCurrentThreadName) {
 		this.logContent = new ByteArrayOutputStream();
 		this.log = new PrintStream(logContent);
 		this.errContent = new ByteArrayOutputStream();
@@ -73,12 +72,16 @@ public class TestLogger implements Logger {
 	}
 
 	@Nullable
-	private String format(@Nullable String from, @Nullable Object... arguments){
-		if(from != null) {
+	private String format(@Nullable String from, @Nullable Object... arguments) {
+		if (from != null) {
 			String computed = from;
 			if (arguments != null && arguments.length != 0) {
 				for (Object argument : arguments) {
-					computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(argument.toString()));
+					computed =
+						computed.replaceFirst(
+							"\\{\\}",
+							Matcher.quoteReplacement(argument.toString())
+						);
 				}
 			}
 			return computed;
@@ -100,6 +103,7 @@ public class TestLogger implements Logger {
 	public synchronized void trace(String format, Object... arguments) {
 		this.log.format(logContent("TRACE", format(format, arguments)));
 	}
+
 	@Override
 	public synchronized void trace(String msg, Throwable t) {
 		this.log.format(logContent("TRACE", String.format("%s - %s", msg, t)));
@@ -190,10 +194,14 @@ public class TestLogger implements Logger {
 		t.printStackTrace(this.err);
 	}
 
-	String logContent(String logType, String msg){
-		if(logCurrentThreadName){
-			return String.format("[%s] (%s) %s\n", logType,
-					Thread.currentThread().getName(), msg);
+	String logContent(String logType, String msg) {
+		if (logCurrentThreadName) {
+			return String.format(
+				"[%s] (%s) %s\n",
+				logType,
+				Thread.currentThread().getName(),
+				msg
+			);
 		} else {
 			return String.format("[%s] %s\n", logType, msg);
 		}

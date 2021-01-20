@@ -15,12 +15,13 @@
  */
 package reactor.test;
 
+import static org.assertj.core.api.Assertions.*;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import reactor.core.publisher.Flux;
@@ -35,8 +36,6 @@ import reactor.test.DefaultStepVerifierBuilder.TaskEvent;
 import reactor.test.DefaultStepVerifierBuilder.WaitEvent;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
-import static org.assertj.core.api.Assertions.*;
-
 /**
  * @author Stephane Maldini
  */
@@ -46,27 +45,33 @@ public class DefaultStepVerifierBuilderTests {
 	public void subscribedTwice() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		DefaultVerifySubscriber<String> s =
-				new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create().initialRequest(Long.MAX_VALUE), null)
-						.expectNext("foo", "bar")
-						.expectComplete()
-				.toSubscriber();
+		DefaultVerifySubscriber<String> s = new DefaultStepVerifierBuilder<String>(
+			StepVerifierOptions.create().initialRequest(Long.MAX_VALUE),
+			null
+		)
+			.expectNext("foo", "bar")
+			.expectComplete()
+			.toSubscriber();
 
 		flux.subscribe(s);
 		flux.subscribe(s);
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(s::verify)
-				.withMessageStartingWith("expectation failed (an unexpected Subscription has been received");
+			.isThrownBy(s::verify)
+			.withMessageStartingWith(
+				"expectation failed (an unexpected Subscription has been received"
+			);
 	}
 
 	@Test
 	public void subscribedTwiceDetectsSpecialSubscription() {
 		Flux<String> flux = Flux.never();
 
-		DefaultVerifySubscriber<String> s =
-				new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create().initialRequest(Long.MAX_VALUE), null)
-						.expectErrorMessage("expected")
-				.toSubscriber();
+		DefaultVerifySubscriber<String> s = new DefaultStepVerifierBuilder<String>(
+			StepVerifierOptions.create().initialRequest(Long.MAX_VALUE),
+			null
+		)
+			.expectErrorMessage("expected")
+			.toSubscriber();
 
 		flux.subscribe(s);
 		Operators.reportThrowInSubscribe(s, new RuntimeException("expected"));
@@ -84,15 +89,17 @@ public class DefaultStepVerifierBuilderTests {
 
 			Flux<String> flux = Flux.just("foo").delayElements(Duration.ofSeconds(4));
 
-			DefaultVerifySubscriber<String> s =
-					new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create()
-							.initialRequest(Long.MAX_VALUE)
-							.virtualTimeSchedulerSupplier(() -> vts),
-					null)//important to avoid triggering of vts capture-and-enable
-					.thenAwait(Duration.ofSeconds(1))
-					.expectNext("foo")
-					.expectComplete()
-					.toSubscriber();
+			DefaultVerifySubscriber<String> s = new DefaultStepVerifierBuilder<String>(
+				StepVerifierOptions
+					.create()
+					.initialRequest(Long.MAX_VALUE)
+					.virtualTimeSchedulerSupplier(() -> vts),
+				null
+			) //important to avoid triggering of vts capture-and-enable
+				.thenAwait(Duration.ofSeconds(1))
+				.expectNext("foo")
+				.expectComplete()
+				.toSubscriber();
 
 			flux.subscribe(s);
 			vts.advanceTimeBy(Duration.ofSeconds(3));
@@ -100,8 +107,7 @@ public class DefaultStepVerifierBuilderTests {
 
 			assertThat(s.virtualTimeScheduler()).isSameAs(vts);
 			assertThat(VirtualTimeScheduler.get()).isSameAs(vts);
-		}
-		finally {
+		} finally {
 			VirtualTimeScheduler.reset();
 		}
 	}
@@ -110,95 +116,103 @@ public class DefaultStepVerifierBuilderTests {
 	public void suppliedVirtualTimeButNoSourceDoesntEnableScheduler() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
-		new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create()
+		new DefaultStepVerifierBuilder<String>(
+			StepVerifierOptions
+				.create()
 				.initialRequest(Long.MAX_VALUE)
 				.virtualTimeSchedulerSupplier(() -> vts),
-				null) //important to avoid triggering of vts capture-and-enable
-							.expectNoEvent(Duration.ofSeconds(4))
-							.expectComplete()
-							.toSubscriber();
+			null
+		) //important to avoid triggering of vts capture-and-enable
+			.expectNoEvent(Duration.ofSeconds(4))
+			.expectComplete()
+			.toSubscriber();
 
 		try {
 			//also test the side effect case where VTS has been enabled and not reset
 			VirtualTimeScheduler current = VirtualTimeScheduler.get();
 			assertThat(current).isNotSameAs(vts);
-		}
-		catch (IllegalStateException e) {
+		} catch (IllegalStateException e) {
 			assertThat(e).hasMessageContaining("VirtualTimeScheduler");
 		}
 	}
 
 	@Test
 	public void noSourceSupplierFailsFastWhenAttemptingVerify() {
-		StepVerifier stepVerifier = new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create(), null).expectComplete();
+		StepVerifier stepVerifier = new DefaultStepVerifierBuilder<String>(
+			StepVerifierOptions.create(),
+			null
+		)
+			.expectComplete();
 
-		assertThatIllegalArgumentException().isThrownBy(stepVerifier::verify)
-		                                    .withMessage("no source to automatically subscribe to for verification");
+		assertThatIllegalArgumentException()
+			.isThrownBy(stepVerifier::verify)
+			.withMessage("no source to automatically subscribe to for verification");
 	}
 
 	@Test
 	public void testConflateOnTaskThenSubscriptionEvents() {
 		List<Event<String>> script = Arrays.asList(
-				new TaskEvent<String>(() -> {}, "A"),
-				new TaskEvent<String>(() -> {}, "B"),
-				new WaitEvent<String>(Duration.ofSeconds(5), "C"),
-				new SubscriptionEvent<String>("D"),
-				new SubscriptionEvent<String>(sub -> { }, "E")
+			new TaskEvent<String>(() -> {}, "A"),
+			new TaskEvent<String>(() -> {}, "B"),
+			new WaitEvent<String>(Duration.ofSeconds(5), "C"),
+			new SubscriptionEvent<String>("D"),
+			new SubscriptionEvent<String>(sub -> {}, "E")
 		);
 
-		Queue<Event<String>> queue =
-				DefaultVerifySubscriber.conflateScript(script, null);
+		Queue<Event<String>> queue = DefaultVerifySubscriber.conflateScript(script, null);
 
 		assertThat(queue)
-				.hasSize(5)
-				.extracting(e -> e.getClass().getName())
-				.containsExactly(
-				        TaskEvent.class.getName(),
-				        TaskEvent.class.getName(),
-				        WaitEvent.class.getName(),
-				        DefaultStepVerifierBuilder.SubscriptionTaskEvent.class.getName(),
-				        DefaultStepVerifierBuilder.SubscriptionTaskEvent.class.getName());
+			.hasSize(5)
+			.extracting(e -> e.getClass().getName())
+			.containsExactly(
+				TaskEvent.class.getName(),
+				TaskEvent.class.getName(),
+				WaitEvent.class.getName(),
+				DefaultStepVerifierBuilder.SubscriptionTaskEvent.class.getName(),
+				DefaultStepVerifierBuilder.SubscriptionTaskEvent.class.getName()
+			);
 	}
 
 	@Test
 	public void testNoConflateOnSignalThenSubscriptionEvents() {
 		List<Event<String>> script = Arrays.asList(
-				new TaskEvent<String>(() -> {}, "A"),
-				new WaitEvent<String>(Duration.ofSeconds(5), "B"),
-				new SignalCountEvent<>(3, "C"),
-				new SubscriptionEvent<String>("D"),
-				new SubscriptionEvent<String>(sub -> { }, "E")
+			new TaskEvent<String>(() -> {}, "A"),
+			new WaitEvent<String>(Duration.ofSeconds(5), "B"),
+			new SignalCountEvent<>(3, "C"),
+			new SubscriptionEvent<String>("D"),
+			new SubscriptionEvent<String>(sub -> {}, "E")
 		);
 
-		Queue<Event<String>> queue =
-				DefaultVerifySubscriber.conflateScript(script, null);
+		Queue<Event<String>> queue = DefaultVerifySubscriber.conflateScript(script, null);
 
 		assertThat(queue)
-				.hasSize(5)
-				.extracting(e -> e.getClass().getName())
-				.containsExactly(
-						TaskEvent.class.getName(),
-						WaitEvent.class.getName(),
-						SignalCountEvent.class.getName(),
-						SubscriptionEvent.class.getName(),
-						SubscriptionEvent.class.getName());
+			.hasSize(5)
+			.extracting(e -> e.getClass().getName())
+			.containsExactly(
+				TaskEvent.class.getName(),
+				WaitEvent.class.getName(),
+				SignalCountEvent.class.getName(),
+				SubscriptionEvent.class.getName(),
+				SubscriptionEvent.class.getName()
+			);
 	}
 
 	@Test
 	public void testConflateChangesDescriptionAndRemoveAs() {
 		List<Event<String>> script = Arrays.asList(
-				new SignalEvent<String>((s,v) -> Optional.empty(), "A"),
-				new SignalEvent<String>((s,v) -> Optional.empty(), "B"),
-				new DescriptionEvent<String>("foo"),
-				new DescriptionEvent<String>("bar"),
-				new SignalCountEvent<String>(1, "C"),
-				new DescriptionEvent<String>("baz")
+			new SignalEvent<String>((s, v) -> Optional.empty(), "A"),
+			new SignalEvent<String>((s, v) -> Optional.empty(), "B"),
+			new DescriptionEvent<String>("foo"),
+			new DescriptionEvent<String>("bar"),
+			new SignalCountEvent<String>(1, "C"),
+			new DescriptionEvent<String>("baz")
 		);
 
 		Queue<Event<String>> queue = DefaultVerifySubscriber.conflateScript(script, null);
 
-		assertThat(queue).hasSize(3)
-		                 .extracting(Event::getDescription)
-		                 .containsExactly("A", "foo", "baz");
+		assertThat(queue)
+			.hasSize(3)
+			.extracting(Event::getDescription)
+			.containsExactly("A", "foo", "baz");
 	}
 }

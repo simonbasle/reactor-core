@@ -15,23 +15,25 @@
  */
 package reactor.test;
 
-import java.time.Duration;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
-
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class StepVerifierTimeoutTests {
 
 	@Test
 	public void verifyThenAssert_failsAfterCustomTimeout() {
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() ->
-						StepVerifier.create(Mono.delay(Duration.ofMillis(150)))
-						            .expectComplete()
-						            .verifyThenAssertThat(Duration.ofMillis(50)))
-				.withMessageStartingWith("VerifySubscriber timed out");
+			.isThrownBy(
+				() ->
+					StepVerifier
+						.create(Mono.delay(Duration.ofMillis(150)))
+						.expectComplete()
+						.verifyThenAssertThat(Duration.ofMillis(50))
+			)
+			.withMessageStartingWith("VerifySubscriber timed out");
 	}
 
 	@Test
@@ -40,10 +42,11 @@ public class StepVerifierTimeoutTests {
 			StepVerifier.setDefaultTimeout(Duration.ofMillis(50));
 
 			Duration longerThanDefaultTimeout = Duration.ofMillis(150);
-			StepVerifier.create(Mono.delay(longerThanDefaultTimeout))
-			            .expectNext(0L)
-			            .expectComplete()
-			            .verifyThenAssertThat(Duration.ofMillis(250));
+			StepVerifier
+				.create(Mono.delay(longerThanDefaultTimeout))
+				.expectNext(0L)
+				.expectComplete()
+				.verifyThenAssertThat(Duration.ofMillis(250));
 		} finally {
 			StepVerifier.resetDefaultTimeout();
 		}

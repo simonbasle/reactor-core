@@ -16,15 +16,14 @@
 
 package reactor.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Signal;
 import reactor.test.ValueFormatters.Extractor;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class StepVerifierOptionsTest {
 
@@ -37,8 +36,13 @@ public class StepVerifierOptionsTest {
 
 	@Test
 	public void valueFormatterCanSetNull() {
-		ValueFormatters.ToStringConverter formatter = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
-		final StepVerifierOptions options = StepVerifierOptions.create().valueFormatter(formatter);
+		ValueFormatters.ToStringConverter formatter = ValueFormatters.forClass(
+			Object.class,
+			o -> o.getClass().getSimpleName()
+		);
+		final StepVerifierOptions options = StepVerifierOptions
+			.create()
+			.valueFormatter(formatter);
 
 		assertThat(options.getValueFormatter()).as("before remove").isSameAs(formatter);
 
@@ -49,10 +53,18 @@ public class StepVerifierOptionsTest {
 
 	@Test
 	public void valueFormatterSetterReplaces() {
-		ValueFormatters.ToStringConverter formatter1 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
-		ValueFormatters.ToStringConverter formatter2 = ValueFormatters.forClass(Object.class, o -> o.getClass().getSimpleName());
+		ValueFormatters.ToStringConverter formatter1 = ValueFormatters.forClass(
+			Object.class,
+			o -> o.getClass().getSimpleName()
+		);
+		ValueFormatters.ToStringConverter formatter2 = ValueFormatters.forClass(
+			Object.class,
+			o -> o.getClass().getSimpleName()
+		);
 
-		final StepVerifierOptions options = StepVerifierOptions.create().valueFormatter(formatter1);
+		final StepVerifierOptions options = StepVerifierOptions
+			.create()
+			.valueFormatter(formatter1);
 
 		assertThat(options.getValueFormatter()).as("before replace").isSameAs(formatter1);
 
@@ -65,70 +77,76 @@ public class StepVerifierOptionsTest {
 	public void extractorsDefaultAtEnd() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
-		options.extractor(new Extractor<String>() {
-			@Override
-			public Class<String> getTargetClass() {
-				return String.class;
-			}
+		options.extractor(
+			new Extractor<String>() {
+				@Override
+				public Class<String> getTargetClass() {
+					return String.class;
+				}
 
-			@Override
-			public Stream<Object> explode(String original) {
-				return Arrays.stream(original.split(" "));
+				@Override
+				public Stream<Object> explode(String original) {
+					return Arrays.stream(original.split(" "));
+				}
 			}
-		});
+		);
 
-		assertThat(options.getExtractors()
-		                  .stream()
-		                  .map(e -> e.getTargetClass().getSimpleName()))
-				.containsExactly("String", "Signal", "Iterable", "Object[]");
+		assertThat(
+			options.getExtractors().stream().map(e -> e.getTargetClass().getSimpleName())
+		)
+			.containsExactly("String", "Signal", "Iterable", "Object[]");
 	}
 
 	@Test
 	public void extractorReplacingDefaultMovesUp() {
 		StepVerifierOptions options = StepVerifierOptions.create();
 
-		options.extractor(new Extractor<Signal>() {
-			@Override
-			public Class<Signal> getTargetClass() {
-				return Signal.class;
-			}
+		options.extractor(
+			new Extractor<Signal>() {
+				@Override
+				public Class<Signal> getTargetClass() {
+					return Signal.class;
+				}
 
-			@Override
-			public boolean matches(Signal value) {
-				return false;
-			}
+				@Override
+				public boolean matches(Signal value) {
+					return false;
+				}
 
-			@Override
-			public String prefix(Signal original) {
-				return "signal(";
-			}
+				@Override
+				public String prefix(Signal original) {
+					return "signal(";
+				}
 
-			@Override
-			public String suffix(Signal original) {
-				return ")";
-			}
+				@Override
+				public String suffix(Signal original) {
+					return ")";
+				}
 
-			@Override
-			public Stream<Object> explode(Signal original) {
-				return Stream.of(original.getType());
+				@Override
+				public Stream<Object> explode(Signal original) {
+					return Stream.of(original.getType());
+				}
 			}
-		});
-		options.extractor(new Extractor<String>() {
-			@Override
-			public Class<String> getTargetClass() {
-				return String.class;
-			}
+		);
+		options.extractor(
+			new Extractor<String>() {
+				@Override
+				public Class<String> getTargetClass() {
+					return String.class;
+				}
 
-			@Override
-			public Stream<Object> explode(String original) {
-				return Arrays.stream(original.split(" "));
+				@Override
+				public Stream<Object> explode(String original) {
+					return Arrays.stream(original.split(" "));
+				}
 			}
-		});
+		);
 
-		assertThat(options.getExtractors()
-		                  .stream()
-		                  .map(e -> e.getTargetClass().getSimpleName()))
-				.containsExactly("Signal", "String", "Iterable", "Object[]");
+		assertThat(
+			options.getExtractors().stream().map(e -> e.getTargetClass().getSimpleName())
+		)
+			.containsExactly("Signal", "String", "Iterable", "Object[]");
 	}
 
 	@Test
@@ -157,33 +175,32 @@ public class StepVerifierOptionsTest {
 			}
 		};
 
-		options.extractor(extractorV1)
-		       .extractor(extractorV2);
+		options.extractor(extractorV1).extractor(extractorV2);
 
-		assertThat(options.getExtractors()
-		                  .stream()
-		                  .map(e -> e.getTargetClass().getSimpleName()))
-				.containsExactly("String", "Signal", "Iterable", "Object[]");
+		assertThat(
+			options.getExtractors().stream().map(e -> e.getTargetClass().getSimpleName())
+		)
+			.containsExactly("String", "Signal", "Iterable", "Object[]");
 
-		assertThat(options.getExtractors())
-				.first()
-				.isSameAs(extractorV2);
+		assertThat(options.getExtractors()).first().isSameAs(extractorV2);
 	}
 
 	@Test
 	public void getExtractorsIsCopy() {
 		StepVerifierOptions options = StepVerifierOptions.create();
-		options.extractor(new Extractor<String>() {
-			@Override
-			public Class<String> getTargetClass() {
-				return String.class;
-			}
+		options.extractor(
+			new Extractor<String>() {
+				@Override
+				public Class<String> getTargetClass() {
+					return String.class;
+				}
 
-			@Override
-			public Stream<Object> explode(String original) {
-				return Arrays.stream(original.split(" "));
+				@Override
+				public Stream<Object> explode(String original) {
+					return Arrays.stream(original.split(" "));
+				}
 			}
-		});
+		);
 
 		Collection<Extractor<?>> extractors1 = options.getExtractors();
 		Collection<Extractor<?>> extractors2 = options.getExtractors();
@@ -195,5 +212,4 @@ public class StepVerifierOptionsTest {
 		assertThat(extractors1).isEmpty();
 		assertThat(extractors2).isNotEmpty();
 	}
-
 }

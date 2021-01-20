@@ -4,7 +4,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Function;
-
 import reactor.core.Disposable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -20,8 +19,7 @@ public final class LoggerUtils {
 	@Nullable
 	private static Logger testLogger;
 
-	private LoggerUtils() {
-	}
+	private LoggerUtils() {}
 
 	/**
 	 * Sets a {@link Loggers#useCustomLoggers(Function) logger factory} that will return loggers that not only use the
@@ -43,14 +41,18 @@ public final class LoggerUtils {
 			if (originalFactory instanceof CapturingFactory) {
 				return (Disposable) originalFactory;
 			}
-			Method originalFactoryMethod = originalFactory.getClass().getMethod("apply", String.class);
+			Method originalFactoryMethod = originalFactory
+				.getClass()
+				.getMethod("apply", String.class);
 			originalFactoryMethod.setAccessible(true);
 
-			CapturingFactory capturingFactory = new CapturingFactory(originalFactory, originalFactoryMethod);
+			CapturingFactory capturingFactory = new CapturingFactory(
+				originalFactory,
+				originalFactoryMethod
+			);
 			Loggers.useCustomLoggers(capturingFactory);
 			return capturingFactory;
-		}
-		catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException e) {
+		} catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException e) {
 			throw new IllegalStateException("Could not install custom logger", e);
 		}
 	}
@@ -62,7 +64,9 @@ public final class LoggerUtils {
 	 */
 	public static void enableCaptureWith(Logger testLogger) {
 		if (LoggerUtils.testLogger != null) {
-			throw new IllegalStateException("A logger was already set, maybe from a previous run. Don't forget to call disableCapture()");
+			throw new IllegalStateException(
+				"A logger was already set, maybe from a previous run. Don't forget to call disableCapture()"
+			);
 		}
 		LoggerUtils.testLogger = testLogger;
 	}
@@ -73,7 +77,6 @@ public final class LoggerUtils {
 	public static void disableCapture() {
 		LoggerUtils.testLogger = null;
 	}
-
 
 	private static class CapturingFactory implements Function<String, Logger>, Disposable {
 
@@ -88,10 +91,12 @@ public final class LoggerUtils {
 		@Override
 		public Logger apply(String category) {
 			try {
-				Logger original = (Logger) originalFactoryMethod.invoke(originalFactory, category);
+				Logger original = (Logger) originalFactoryMethod.invoke(
+					originalFactory,
+					category
+				);
 				return new DivertingLogger(original);
-			}
-			catch (IllegalAccessException | InvocationTargetException e) {
+			} catch (IllegalAccessException | InvocationTargetException e) {
 				throw new RuntimeException(e);
 			}
 		}
@@ -104,11 +109,12 @@ public final class LoggerUtils {
 				Object o = lfField.get(Loggers.class);
 
 				if (!(Loggers.getLogger(LoggerUtils.class) instanceof DivertingLogger)) {
-					throw new IllegalStateException("Expected the current factory to be " + this + ", found " + o + " instead");
+					throw new IllegalStateException(
+						"Expected the current factory to be " + this + ", found " + o + " instead"
+					);
 				}
 				lfField.set(Loggers.class, originalFactory);
-			}
-			catch (NoSuchFieldException | IllegalAccessException e) {
+			} catch (NoSuchFieldException | IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
 		}

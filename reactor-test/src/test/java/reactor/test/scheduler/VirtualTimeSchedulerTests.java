@@ -16,6 +16,8 @@
 
 package reactor.test.scheduler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -32,8 +33,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.util.RaceTestUtils;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Stephane Maldini
@@ -54,7 +53,8 @@ public class VirtualTimeSchedulerTests {
 		@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic
 		Scheduler elastic1 = Schedulers.newElastic("");
 		assertThat(elastic1).isNotInstanceOf(VirtualTimeScheduler.class);
-		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, ""))
+			.isNotInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newSingle("")).isNotInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler.getOrSet();
@@ -63,7 +63,8 @@ public class VirtualTimeSchedulerTests {
 		@SuppressWarnings("deprecation") // To be removed in 3.5 alongside Schedulers.newElastic
 		Scheduler elastic2 = Schedulers.newElastic("");
 		assertThat(elastic2).isInstanceOf(VirtualTimeScheduler.class);
-		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, "")).isInstanceOf(VirtualTimeScheduler.class);
+		assertThat(Schedulers.newBoundedElastic(4, Integer.MAX_VALUE, ""))
+			.isInstanceOf(VirtualTimeScheduler.class);
 		assertThat(Schedulers.newSingle("")).isInstanceOf(VirtualTimeScheduler.class);
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
@@ -84,7 +85,6 @@ public class VirtualTimeSchedulerTests {
 
 		assertThat(vts).isSameAs(uncache(Schedulers.single()));
 		assertThat(vts.shutdown).isFalse();
-
 
 		VirtualTimeScheduler.getOrSet(vts);
 
@@ -112,24 +112,24 @@ public class VirtualTimeSchedulerTests {
 		vts.dispose();
 		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
 
-		StepVerifier.withVirtualTime(() -> Mono.just("foo"),
-				() -> vts, Long.MAX_VALUE)
-	                .then(() -> assertThat(VirtualTimeScheduler.isFactoryEnabled()).isTrue())
-	                .then(() -> assertThat(VirtualTimeScheduler.get()).isSameAs(vts))
-	                .expectNext("foo")
-	                .verifyComplete();
+		StepVerifier
+			.withVirtualTime(() -> Mono.just("foo"), () -> vts, Long.MAX_VALUE)
+			.then(() -> assertThat(VirtualTimeScheduler.isFactoryEnabled()).isTrue())
+			.then(() -> assertThat(VirtualTimeScheduler.get()).isSameAs(vts))
+			.expectNext("foo")
+			.verifyComplete();
 
 		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
 
-		StepVerifier.withVirtualTime(() -> Mono.just("foo"))
-	                .then(() -> assertThat(VirtualTimeScheduler.isFactoryEnabled()).isTrue())
-	                .then(() -> assertThat(VirtualTimeScheduler.get()).isNotSameAs(vts))
-	                .expectNext("foo")
-	                .verifyComplete();
+		StepVerifier
+			.withVirtualTime(() -> Mono.just("foo"))
+			.then(() -> assertThat(VirtualTimeScheduler.isFactoryEnabled()).isTrue())
+			.then(() -> assertThat(VirtualTimeScheduler.get()).isNotSameAs(vts))
+			.expectNext("foo")
+			.verifyComplete();
 
 		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
 	}
-
 
 	@Test
 	public void captureNowInScheduledTask() {
@@ -140,25 +140,46 @@ public class VirtualTimeSchedulerTests {
 		try {
 			vts.advanceTimeBy(Duration.ofMillis(100));
 
-			vts.schedule(() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
-					100, TimeUnit.MILLISECONDS);
+			vts.schedule(
+				() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+				100,
+				TimeUnit.MILLISECONDS
+			);
 
-			vts.schedule(() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
-					456, TimeUnit.MILLISECONDS);
+			vts.schedule(
+				() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+				456,
+				TimeUnit.MILLISECONDS
+			);
 
-			vts.schedulePeriodically(() -> periodicExecutionTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
-					0, 100, TimeUnit.MILLISECONDS);
+			vts.schedulePeriodically(
+				() -> periodicExecutionTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+				0,
+				100,
+				TimeUnit.MILLISECONDS
+			);
 
 			vts.advanceTimeBy(Duration.ofMillis(1000));
 
 			assertThat(singleExecutionsTimestamps)
-					.as("single executions")
-					.containsExactly(100L, 456L + 100L);
+				.as("single executions")
+				.containsExactly(100L, 456L + 100L);
 			assertThat(periodicExecutionTimestamps)
-					.as("periodic executions")
-					.containsExactly(100L, 200L, 300L, 400L, 500L, 600L, 700L, 800L, 900L, 1000L, 1100L);
-		}
-		finally {
+				.as("periodic executions")
+				.containsExactly(
+					100L,
+					200L,
+					300L,
+					400L,
+					500L,
+					600L,
+					700L,
+					800L,
+					900L,
+					1000L,
+					1100L
+				);
+		} finally {
 			vts.dispose();
 		}
 	}
@@ -169,19 +190,23 @@ public class VirtualTimeSchedulerTests {
 		List<Long> singleExecutionsTimestamps = new ArrayList<>();
 
 		try {
-			vts.schedule(() -> vts.schedule(
-					() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
-					100, TimeUnit.MILLISECONDS
+			vts.schedule(
+				() ->
+					vts.schedule(
+						() -> singleExecutionsTimestamps.add(vts.now(TimeUnit.MILLISECONDS)),
+						100,
+						TimeUnit.MILLISECONDS
 					),
-					300, TimeUnit.MILLISECONDS);
+				300,
+				TimeUnit.MILLISECONDS
+			);
 
 			vts.advanceTimeBy(Duration.ofMillis(1000));
 
 			assertThat(singleExecutionsTimestamps)
-					.as("single executions")
-					.containsExactly(400L);
-		}
-		finally {
+				.as("single executions")
+				.containsExactly(400L);
+		} finally {
 			vts.dispose();
 		}
 	}
@@ -192,19 +217,19 @@ public class VirtualTimeSchedulerTests {
 		try {
 			for (int i = 1; i <= 100; i++) {
 				RaceTestUtils.race(
-						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
-						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+					() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
+					() -> vts.advanceTimeBy(Duration.ofSeconds(3))
+				);
 
 				assertThat(vts.now(TimeUnit.MILLISECONDS))
-						.as("iteration " + i)
-						.isEqualTo(13_000 * i);
+					.as("iteration " + i)
+					.isEqualTo(13_000 * i);
 
 				assertThat(vts.nanoTime)
-						.as("now() == nanoTime in iteration " + i)
-						.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
+					.as("now() == nanoTime in iteration " + i)
+					.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
 			}
-		}
-		finally {
+		} finally {
 			vts.dispose();
 		}
 	}
@@ -216,19 +241,19 @@ public class VirtualTimeSchedulerTests {
 			vts.schedule(() -> {}, 10, TimeUnit.HOURS);
 			for (int i = 1; i <= 100; i++) {
 				reactor.test.util.RaceTestUtils.race(
-						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
-						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+					() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
+					() -> vts.advanceTimeBy(Duration.ofSeconds(3))
+				);
 
 				assertThat(vts.now(TimeUnit.MILLISECONDS))
-						.as("now() iteration " + i)
-						.isEqualTo(13_000 * i);
+					.as("now() iteration " + i)
+					.isEqualTo(13_000 * i);
 
 				assertThat(vts.nanoTime)
-						.as("now() == nanoTime in iteration " + i)
-						.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
+					.as("now() == nanoTime in iteration " + i)
+					.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
 			}
-		}
-		finally {
+		} finally {
 			vts.dispose();
 		}
 	}
@@ -240,26 +265,26 @@ public class VirtualTimeSchedulerTests {
 		try {
 			for (int i = 1; i <= 100; i++) {
 				RaceTestUtils.race(
-						() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
-						() -> vts.advanceTimeBy(Duration.ofSeconds(3)));
+					() -> vts.advanceTimeBy(Duration.ofSeconds(10)),
+					() -> vts.advanceTimeBy(Duration.ofSeconds(3))
+				);
 
 				if (i % 10 == 0) {
 					vts.schedule(count::incrementAndGet, 14, TimeUnit.SECONDS);
 				}
 
 				assertThat(vts.now(TimeUnit.MILLISECONDS))
-						.as("now() iteration " + i)
-						.isEqualTo(13_000 * i);
+					.as("now() iteration " + i)
+					.isEqualTo(13_000 * i);
 			}
 			assertThat(count).as("scheduled task run").hasValue(10);
 
 			assertThat(vts.nanoTime)
-					.as("now() == nanoTime")
-					.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
+				.as("now() == nanoTime")
+				.isEqualTo(vts.now(TimeUnit.NANOSECONDS));
 
 			assertThat(vts.deferredNanoTime).as("cleared deferredNanoTime").isZero();
-		}
-		finally {
+		} finally {
 			vts.dispose();
 		}
 	}
@@ -269,8 +294,7 @@ public class VirtualTimeSchedulerTests {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		assertThat(vts.getScheduledTaskCount()).as("initial value").isEqualTo(0);
 
-		vts.schedule(() -> {
-		});
+		vts.schedule(() -> {});
 		assertThat(vts.getScheduledTaskCount()).as("a task scheduled").isEqualTo(1);
 	}
 
@@ -278,8 +302,7 @@ public class VirtualTimeSchedulerTests {
 	public void scheduledTaskCountWithInitialDelay() {
 		// schedule with delay
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
-		vts.schedule(() -> {
-		}, 10, TimeUnit.DAYS);
+		vts.schedule(() -> {}, 10, TimeUnit.DAYS);
 		assertThat(vts.getScheduledTaskCount()).as("scheduled in future").isEqualTo(1);
 
 		vts.advanceTimeBy(Duration.ofDays(11));
@@ -290,8 +313,7 @@ public class VirtualTimeSchedulerTests {
 	public void scheduledTaskCountWithNoInitialDelay() {
 		// schedulePeriodically with no initial delay
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
-		vts.schedulePeriodically(() -> {
-		}, 0, 5, TimeUnit.DAYS);
+		vts.schedulePeriodically(() -> {}, 0, 5, TimeUnit.DAYS);
 
 		assertThat(vts.getScheduledTaskCount())
 			.as("initial delay task performed and scheduled for the first periodical task")
@@ -307,16 +329,13 @@ public class VirtualTimeSchedulerTests {
 	public void scheduledTaskCountBySchedulePeriodically() {
 		// schedulePeriodically with initial delay
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
-		vts.schedulePeriodically(() -> {
-		}, 10, 5, TimeUnit.DAYS);
+		vts.schedulePeriodically(() -> {}, 10, 5, TimeUnit.DAYS);
 		assertThat(vts.getScheduledTaskCount())
 			.as("scheduled for initial delay task")
 			.isEqualTo(1);
 
 		vts.advanceTimeBy(Duration.ofDays(1));
-		assertThat(vts.getScheduledTaskCount())
-			.as("Still on initial delay")
-			.isEqualTo(1);
+		assertThat(vts.getScheduledTaskCount()).as("Still on initial delay").isEqualTo(1);
 
 		vts.advanceTimeBy(Duration.ofDays(10));
 		assertThat(vts.getScheduledTaskCount())
@@ -334,14 +353,13 @@ public class VirtualTimeSchedulerTests {
 		AtomicReference<VirtualTimeScheduler> vts1 = new AtomicReference<>();
 		AtomicReference<VirtualTimeScheduler> vts2 = new AtomicReference<>();
 		RaceTestUtils.race(
-				() -> vts1.set(VirtualTimeScheduler.getOrSet(true)),
-				() -> vts2.set(VirtualTimeScheduler.getOrSet(true))
+			() -> vts1.set(VirtualTimeScheduler.getOrSet(true)),
+			() -> vts2.set(VirtualTimeScheduler.getOrSet(true))
 		);
 
 		assertThat(vts1.get().defer).isTrue();
 		assertThat(vts2.get()).isSameAs(vts1.get());
 	}
-
 
 	@Test
 	public void resetRestoresSnapshotOfSchedulers() {
@@ -364,7 +382,9 @@ public class VirtualTimeSchedulerTests {
 		Scheduler vtsScheduler = Schedulers.single();
 
 		assertThat(singleCreated).as("after VTS setup").hasValue(1);
-		assertThat(vtsScheduler).as("shared scheduler replaced").isNotSameAs(originalScheduler);
+		assertThat(vtsScheduler)
+			.as("shared scheduler replaced")
+			.isNotSameAs(originalScheduler);
 		assertThat(originalScheduler.isDisposed()).as("original isDisposed").isFalse();
 
 		//attempt to restore the original schedulers and factory
@@ -374,8 +394,12 @@ public class VirtualTimeSchedulerTests {
 		postResetNewScheduler.dispose();
 
 		assertThat(singleCreated).as("total custom created").hasValue(2);
-		assertThat(postResetSharedScheduler).as("shared restored").isSameAs(originalScheduler);
-		assertThat(postResetNewScheduler).as("new from restoredgt").isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(postResetSharedScheduler)
+			.as("shared restored")
+			.isSameAs(originalScheduler);
+		assertThat(postResetNewScheduler)
+			.as("new from restoredgt")
+			.isNotInstanceOf(VirtualTimeScheduler.class);
 	}
 
 	@Test
@@ -399,7 +423,9 @@ public class VirtualTimeSchedulerTests {
 		Scheduler vtsScheduler = Schedulers.single();
 
 		assertThat(singleCreated).as("after 1st VTS setup").hasValue(1);
-		assertThat(vtsScheduler).as("shared scheduler 1st replaced").isNotSameAs(originalScheduler);
+		assertThat(vtsScheduler)
+			.as("shared scheduler 1st replaced")
+			.isNotSameAs(originalScheduler);
 		assertThat(originalScheduler.isDisposed()).as("original isDisposed").isFalse();
 
 		//force replacing VTS factory by another VTS factory
@@ -408,9 +434,10 @@ public class VirtualTimeSchedulerTests {
 		Scheduler vtsScheduler2 = Schedulers.single();
 
 		assertThat(singleCreated).as("after 2nd VTS setup").hasValue(1);
-		assertThat(vtsScheduler2).as("shared scheduler 2nd replaced")
-		                         .isNotSameAs(originalScheduler)
-		                         .isNotSameAs(vtsScheduler);
+		assertThat(vtsScheduler2)
+			.as("shared scheduler 2nd replaced")
+			.isNotSameAs(originalScheduler)
+			.isNotSameAs(vtsScheduler);
 		assertThat(originalScheduler.isDisposed()).as("original isDisposed").isFalse();
 
 		//attempt to restore the original schedulers and factory
@@ -420,8 +447,12 @@ public class VirtualTimeSchedulerTests {
 		postResetNewScheduler.dispose();
 
 		assertThat(singleCreated).as("total custom created").hasValue(2);
-		assertThat(postResetSharedScheduler).as("shared restored").isSameAs(originalScheduler);
-		assertThat(postResetNewScheduler).as("new from restoredgt").isNotInstanceOf(VirtualTimeScheduler.class);
+		assertThat(postResetSharedScheduler)
+			.as("shared restored")
+			.isSameAs(originalScheduler);
+		assertThat(postResetNewScheduler)
+			.as("new from restoredgt")
+			.isNotInstanceOf(VirtualTimeScheduler.class);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -436,5 +467,4 @@ public class VirtualTimeSchedulerTests {
 	public void cleanup() {
 		VirtualTimeScheduler.reset();
 	}
-
 }

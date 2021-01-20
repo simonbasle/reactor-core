@@ -15,9 +15,10 @@
  */
 package reactor.test.publisher;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -27,9 +28,6 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher.Violation;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-
 public class DefaultTestPublisherTests {
 
 	@Test
@@ -37,47 +35,62 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.create();
 
 		assertThatExceptionOfType(NullPointerException.class)
-				.isThrownBy(() -> publisher.next(null))
-				.withMessage("emitted values must be non-null");
+			.isThrownBy(() -> publisher.next(null))
+			.withMessage("emitted values must be non-null");
 	}
 
 	@Test
 	public void misbehavingAllowsNull() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.ALLOW_NULL);
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
+			Violation.ALLOW_NULL
+		);
 
-		StepVerifier.create(publisher)
-		            .then(() -> publisher.emit("foo", null))
-		            .expectNext("foo", null)
-		            .expectComplete()
-		            .verify();
+		StepVerifier
+			.create(publisher)
+			.then(() -> publisher.emit("foo", null))
+			.expectNext("foo", null)
+			.expectComplete()
+			.verify();
 	}
 
 	@Test
 	public void normalDisallowsOverflow() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		StepVerifier.create(publisher, 1)
-		            .then(() -> publisher.next("foo")).as("should pass")
-		            .then(() -> publisher.emit("bar")).as("should fail")
-		            .expectNext("foo")
-		            .expectErrorMatches(e -> e instanceof IllegalStateException &&
-		                "Can't deliver value due to lack of requests".equals(e.getMessage()))
-		            .verify();
+		StepVerifier
+			.create(publisher, 1)
+			.then(() -> publisher.next("foo"))
+			.as("should pass")
+			.then(() -> publisher.emit("bar"))
+			.as("should fail")
+			.expectNext("foo")
+			.expectErrorMatches(
+				e ->
+					e instanceof IllegalStateException &&
+					"Can't deliver value due to lack of requests".equals(e.getMessage())
+			)
+			.verify();
 
 		publisher.assertNoRequestOverflow();
 	}
 
 	@Test
 	public void misbehavingAllowsOverflow() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.REQUEST_OVERFLOW);
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
+			Violation.REQUEST_OVERFLOW
+		);
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> StepVerifier.create(publisher, 1)
-				                              .then(() -> publisher.emit("foo", "bar"))
-				                              .expectNext("foo")
-				                              .expectComplete() //n/a
-				                              .verify())
-				.withMessageContaining("expected production of at most 1;");
+			.isThrownBy(
+				() ->
+					StepVerifier
+						.create(publisher, 1)
+						.then(() -> publisher.emit("foo", "bar"))
+						.expectNext("foo")
+						.expectComplete() //n/a
+						.verify()
+			)
+			.withMessageContaining("expected production of at most 1;");
 
 		publisher.assertRequestOverflow();
 	}
@@ -89,10 +102,10 @@ public class DefaultTestPublisherTests {
 
 		Subscriber<String> subscriber = new CoreSubscriber<String>() {
 			@Override
-			public void onSubscribe(Subscription s) { }
+			public void onSubscribe(Subscription s) {}
 
 			@Override
-			public void onNext(String s) { }
+			public void onNext(String s) {}
 
 			@Override
 			public void onError(Throwable t) {
@@ -106,9 +119,7 @@ public class DefaultTestPublisherTests {
 		};
 
 		publisher.subscribe(subscriber);
-		publisher.complete()
-	             .emit("A", "B", "C")
-	             .error(new IllegalStateException("boom"));
+		publisher.complete().emit("A", "B", "C").error(new IllegalStateException("boom"));
 
 		assertThat(count).hasValue(1);
 	}
@@ -122,7 +133,7 @@ public class DefaultTestPublisherTests {
 			}
 
 			@Override
-			public void onNext(String s) { }
+			public void onNext(String s) {}
 
 			@Override
 			public void onError(Throwable t) {
@@ -138,14 +149,15 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void misbehavingAllowsMultipleTerminations() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
+			Violation.CLEANUP_ON_TERMINATE
+		);
 		AtomicLong count = new AtomicLong();
 		Subscriber<String> subscriber = countingSubscriber(count);
 
 		publisher.subscribe(subscriber);
 
-		publisher.error(new IllegalStateException("boom"))
-		         .complete();
+		publisher.error(new IllegalStateException("boom")).complete();
 
 		publisher.emit("A", "B", "C");
 
@@ -155,14 +167,15 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void misbehavingMonoAllowsMultipleTerminations() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
+			Violation.CLEANUP_ON_TERMINATE
+		);
 		AtomicLong count = new AtomicLong();
 		Subscriber<String> subscriber = countingSubscriber(count);
 
 		publisher.mono().subscribe(subscriber);
 
-		publisher.error(new IllegalStateException("boom"))
-		         .complete();
+		publisher.error(new IllegalStateException("boom")).complete();
 
 		publisher.emit("A", "B", "C");
 
@@ -172,15 +185,16 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void misbehavingFluxAllowsMultipleTerminations() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
+			Violation.CLEANUP_ON_TERMINATE
+		);
 		AtomicLong count = new AtomicLong();
 
 		Subscriber<String> subscriber = countingSubscriber(count);
 
 		publisher.flux().subscribe(subscriber);
 
-		publisher.error(new IllegalStateException("boom"))
-		         .complete();
+		publisher.error(new IllegalStateException("boom")).complete();
 
 		publisher.emit("A", "B", "C");
 
@@ -190,21 +204,27 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void misbehavingFluxIgnoresCancellation() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.DEFER_CANCELLATION);
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
+			Violation.DEFER_CANCELLATION
+		);
 		AtomicLong emitCount = new AtomicLong();
 
-		publisher.flux().subscribe(new BaseSubscriber<String>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				subscription.request(Long.MAX_VALUE);
-				subscription.cancel();
-			}
+		publisher
+			.flux()
+			.subscribe(
+				new BaseSubscriber<String>() {
+					@Override
+					protected void hookOnSubscribe(Subscription subscription) {
+						subscription.request(Long.MAX_VALUE);
+						subscription.cancel();
+					}
 
-			@Override
-			protected void hookOnNext(String value) {
-				emitCount.incrementAndGet();
-			}
-		});
+					@Override
+					protected void hookOnNext(String value) {
+						emitCount.incrementAndGet();
+					}
+				}
+			);
 
 		publisher.emit("A", "B", "C");
 
@@ -214,11 +234,12 @@ public class DefaultTestPublisherTests {
 
 	@Test
 	public void misbehavingMonoCanAvoidCompleteAfterOnNext() {
-		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
+			Violation.CLEANUP_ON_TERMINATE
+		);
 		AtomicLong terminalCount = new AtomicLong();
 
-		publisher.mono()
-		         .subscribe(countingSubscriber(terminalCount));
+		publisher.mono().subscribe(countingSubscriber(terminalCount));
 
 		assertThat(terminalCount).as("before onNext").hasValue(0L);
 
@@ -232,14 +253,14 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.create();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(publisher::assertSubscribers)
-				.withMessage("Expected subscribers");
+			.isThrownBy(publisher::assertSubscribers)
+			.withMessage("Expected subscribers");
 
-		StepVerifier.create(publisher)
-		            .then(() -> publisher.assertSubscribers()
-		                                 .complete())
-	                .expectComplete()
-	                .verify();
+		StepVerifier
+			.create(publisher)
+			.then(() -> publisher.assertSubscribers().complete())
+			.expectComplete()
+			.verify();
 	}
 
 	@Test
@@ -247,8 +268,8 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.create();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> publisher.assertSubscribers(1))
-		        .withMessage("Expected 1 subscribers, got 0");
+			.isThrownBy(() -> publisher.assertSubscribers(1))
+			.withMessage("Expected 1 subscribers, got 0");
 
 		publisher.assertNoSubscribers();
 		Flux.from(publisher).subscribe();
@@ -256,8 +277,7 @@ public class DefaultTestPublisherTests {
 		Flux.from(publisher).subscribe();
 		publisher.assertSubscribers(2);
 
-		publisher.complete()
-	             .assertNoSubscribers();
+		publisher.complete().assertNoSubscribers();
 	}
 
 	@Test
@@ -265,8 +285,8 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.create();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> publisher.assertSubscribers(1))
-				.withMessage("Expected 1 subscribers, got 0");
+			.isThrownBy(() -> publisher.assertSubscribers(1))
+			.withMessage("Expected 1 subscribers, got 0");
 
 		assertThat(publisher.subscribeCount()).isEqualTo(0);
 		publisher.assertNoSubscribers();
@@ -284,16 +304,18 @@ public class DefaultTestPublisherTests {
 	@Test
 	public void expectCancelled() {
 		TestPublisher<Object> publisher = TestPublisher.create();
-		StepVerifier.create(publisher)
-	                .then(publisher::assertNotCancelled)
-	                .thenCancel()
-	                .verify();
+		StepVerifier
+			.create(publisher)
+			.then(publisher::assertNotCancelled)
+			.thenCancel()
+			.verify();
 		publisher.assertCancelled();
 
-		StepVerifier.create(publisher)
-	                .then(() -> publisher.assertCancelled(1))
-	                .thenCancel()
-	                .verify();
+		StepVerifier
+			.create(publisher)
+			.then(() -> publisher.assertCancelled(1))
+			.thenCancel()
+			.verify();
 		publisher.assertCancelled(2);
 	}
 
@@ -301,11 +323,12 @@ public class DefaultTestPublisherTests {
 	public void expectMinRequestedNormal() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		StepVerifier.create(Flux.from(publisher).limitRate(5))
-	                .then(publisher::assertNotCancelled)
-	                .then(() -> publisher.assertMinRequested(5))
-	                .thenCancel()
-	                .verify();
+		StepVerifier
+			.create(Flux.from(publisher).limitRate(5))
+			.then(publisher::assertNotCancelled)
+			.then(() -> publisher.assertMinRequested(5))
+			.thenCancel()
+			.verify();
 		publisher.assertCancelled();
 		publisher.assertNoSubscribers();
 		publisher.assertMinRequested(0);
@@ -316,12 +339,16 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.create();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> StepVerifier.create(Flux.from(publisher).limitRate(5))
-		            .then(() -> publisher.assertMinRequested(6)
-		                                 .emit("foo"))
-		            .expectNext("foo").expectComplete() // N/A
-		            .verify())
-		        .withMessageContaining("Expected smallest requested amount to be >= 6; got 5");
+			.isThrownBy(
+				() ->
+					StepVerifier
+						.create(Flux.from(publisher).limitRate(5))
+						.then(() -> publisher.assertMinRequested(6).emit("foo"))
+						.expectNext("foo")
+						.expectComplete() // N/A
+						.verify()
+			)
+			.withMessageContaining("Expected smallest requested amount to be >= 6; got 5");
 
 		publisher.assertCancelled();
 		publisher.assertNoSubscribers();
@@ -359,18 +386,19 @@ public class DefaultTestPublisherTests {
 		Flux.from(publisher).limitRequest(7).subscribe();
 
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> publisher.assertMaxRequested(6))
-				.withMessage("Expected largest requested amount to be <= 6; got 7");
+			.isThrownBy(() -> publisher.assertMaxRequested(6))
+			.withMessage("Expected largest requested amount to be <= 6; got 7");
 	}
 
 	@Test
 	public void emitCompletes() {
 		TestPublisher<String> publisher = TestPublisher.create();
-		StepVerifier.create(publisher)
-	                .then(() -> publisher.emit("foo", "bar"))
-	                .expectNextCount(2)
-	                .expectComplete()
-	                .verify();
+		StepVerifier
+			.create(publisher)
+			.then(() -> publisher.emit("foo", "bar"))
+			.expectNextCount(2)
+			.expectComplete()
+			.verify();
 	}
 
 	@Test
@@ -378,8 +406,8 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.create();
 
 		assertThatExceptionOfType(NullPointerException.class)
-				.isThrownBy(() -> publisher.next(null, (String[]) null)) //end users forgetting to cast would see compiler warning as well
-				.withMessage("rest array is null, please cast to T if null T required");
+			.isThrownBy(() -> publisher.next(null, (String[]) null)) //end users forgetting to cast would see compiler warning as well
+			.withMessage("rest array is null, please cast to T if null T required");
 	}
 
 	@Test
@@ -387,31 +415,32 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.create();
 
 		assertThatExceptionOfType(NullPointerException.class)
-				.isThrownBy(() -> publisher.emit((String[]) null)) //end users forgetting to cast would see compiler warning as well
-				.withMessage("values array is null, please cast to T if null T required");
+			.isThrownBy(() -> publisher.emit((String[]) null)) //end users forgetting to cast would see compiler warning as well
+			.withMessage("values array is null, please cast to T if null T required");
 	}
 
 	@Test
 	public void testError() {
 		TestPublisher<String> publisher = TestPublisher.create();
-		StepVerifier.create(publisher)
-	                .then(() -> publisher.next("foo", "bar").error(new IllegalArgumentException("boom")))
-	                .expectNextCount(2)
-	                .expectErrorMessage("boom")
-	                .verify();
+		StepVerifier
+			.create(publisher)
+			.then(
+				() -> publisher.next("foo", "bar").error(new IllegalArgumentException("boom"))
+			)
+			.expectNextCount(2)
+			.expectErrorMessage("boom")
+			.verify();
 	}
-
-
 
 	@Test
 	public void conditionalSupport() {
 		TestPublisher<String> up = TestPublisher.create();
-		StepVerifier.create(up.flux().filter("test"::equals), 2)
-		            .then(() -> up.next("test"))
-		            .then(() -> up.next("test2"))
-		            .then(() -> up.emit("test"))
-		            .expectNext("test", "test")
-		            .verifyComplete();
+		StepVerifier
+			.create(up.flux().filter("test"::equals), 2)
+			.then(() -> up.next("test"))
+			.then(() -> up.next("test2"))
+			.then(() -> up.emit("test"))
+			.expectNext("test", "test")
+			.verifyComplete();
 	}
-
 }

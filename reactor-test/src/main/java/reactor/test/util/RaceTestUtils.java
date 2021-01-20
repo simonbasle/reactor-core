@@ -24,7 +24,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -47,51 +46,53 @@ public class RaceTestUtils {
 	 * @param terminate the validation check, as a {@link BiPredicate}
 	 * @return the result of the {@code terminate} check
 	 */
-	public static <T> boolean race(T initial, Function<? super T, ? extends T> race,
-			Predicate<? super T> stopRace,
-			BiPredicate<? super T, ? super T> terminate) {
-
+	public static <T> boolean race(
+		T initial,
+		Function<? super T, ? extends T> race,
+		Predicate<? super T> stopRace,
+		BiPredicate<? super T, ? super T> terminate
+	) {
 		Scheduler w1 = Schedulers.newSingle("w1");
 		Scheduler w2 = Schedulers.newSingle("w2");
 
 		try {
-
 			AtomicReference<T> ref1 = new AtomicReference<>();
 			CountDownLatch cdl1 = new CountDownLatch(1);
 			AtomicReference<T> ref2 = new AtomicReference<>();
 			CountDownLatch cdl2 = new CountDownLatch(1);
 
-			w1.schedule(() -> {
-				T state = initial;
-				while (!stopRace.test(state)) {
-					state = race.apply(state);
-					LockSupport.parkNanos(1L);
+			w1.schedule(
+				() -> {
+					T state = initial;
+					while (!stopRace.test(state)) {
+						state = race.apply(state);
+						LockSupport.parkNanos(1L);
+					}
+					ref1.set(state);
+					cdl1.countDown();
 				}
-				ref1.set(state);
-				cdl1.countDown();
-			});
-			w2.schedule(() -> {
-				T state = initial;
-				while (!stopRace.test(state)) {
-					state = race.apply(state);
-					LockSupport.parkNanos(1L);
+			);
+			w2.schedule(
+				() -> {
+					T state = initial;
+					while (!stopRace.test(state)) {
+						state = race.apply(state);
+						LockSupport.parkNanos(1L);
+					}
+					ref2.set(state);
+					cdl2.countDown();
 				}
-				ref2.set(state);
-				cdl2.countDown();
-			});
+			);
 
 			try {
 				cdl1.await();
 				cdl2.await();
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread()
-				      .interrupt();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 
 			return terminate.test(ref1.get(), ref2.get());
-		}
-		finally {
+		} finally {
 			w1.dispose();
 			w2.dispose();
 		}
@@ -120,24 +121,26 @@ public class RaceTestUtils {
 
 		final Throwable[] errors = { null, null };
 
-		s.schedule(() -> {
-			if (count.decrementAndGet() != 0) {
-				while (count.get() != 0) { }
-			}
-
-			try {
-				try {
-					r1.run();
-				} catch (Throwable ex) {
-					errors[0] = ex;
+		s.schedule(
+			() -> {
+				if (count.decrementAndGet() != 0) {
+					while (count.get() != 0) {}
 				}
-			} finally {
-				cdl.countDown();
+
+				try {
+					try {
+						r1.run();
+					} catch (Throwable ex) {
+						errors[0] = ex;
+					}
+				} finally {
+					cdl.countDown();
+				}
 			}
-		});
+		);
 
 		if (count.decrementAndGet() != 0) {
-			while (count.get() != 0) { }
+			while (count.get() != 0) {}
 		}
 
 		try {
@@ -169,5 +172,4 @@ public class RaceTestUtils {
 			throw Exceptions.multiple(errors);
 		}
 	}
-
 }

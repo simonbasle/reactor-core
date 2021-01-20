@@ -15,16 +15,14 @@
  */
 package reactor.test.util;
 
+import static org.assertj.core.api.Assertions.*;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
-
 import reactor.core.Disposable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-
-import static org.assertj.core.api.Assertions.*;
 
 class LoggerUtilsTest {
 
@@ -48,18 +46,24 @@ class LoggerUtilsTest {
 			LoggerUtils.enableCaptureWith(testLogger);
 			Logger otherLogger = Loggers.getLogger("another");
 			otherLogger.debug("This won't be captured either");
-			assertThat(testLogger.getOutContent()).doesNotContain("This won't be captured either");
+			assertThat(testLogger.getOutContent())
+				.doesNotContain("This won't be captured either");
 		}
 	}
 
 	@Test
 	void disposeOnlyUninstallsItself() {
 		Disposable disposable = LoggerUtils.useCurrentLoggersWithCapture();
-		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
-			Loggers.resetLoggerFactory(); // Overwrites our custom logger
-			disposable.dispose();
-		})
-		.withMessageContaining("Expected the current factory to be " + LoggerUtils.class.getName() + "$");
+		assertThatExceptionOfType(IllegalStateException.class)
+			.isThrownBy(
+				() -> {
+					Loggers.resetLoggerFactory(); // Overwrites our custom logger
+					disposable.dispose();
+				}
+			)
+			.withMessageContaining(
+				"Expected the current factory to be " + LoggerUtils.class.getName() + "$"
+			);
 	}
 
 	@Test
@@ -76,5 +80,4 @@ class LoggerUtilsTest {
 
 		assertThatCode(() -> test.error("expected error message")).doesNotThrowAnyException();
 	}
-
 }

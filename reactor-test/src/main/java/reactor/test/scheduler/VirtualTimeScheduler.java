@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
@@ -170,9 +169,11 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * @param exact whether or not to force the use of the supplier, even if there's a matching scheduler
 	 * @return the scheduler that is actually used after the operation.
 	 */
-	static VirtualTimeScheduler enable(Supplier<VirtualTimeScheduler>
-			schedulerSupplier, boolean exact) {
-		for (; ; ) {
+	static VirtualTimeScheduler enable(
+		Supplier<VirtualTimeScheduler> schedulerSupplier,
+		boolean exact
+	) {
+		for (;;) {
 			VirtualTimeScheduler s = CURRENT.get();
 			if (s != null && !exact) {
 				return s;
@@ -186,9 +187,9 @@ public class VirtualTimeScheduler implements Scheduler {
 				if (s != null) {
 					newS.schedulersSnapshot = s.schedulersSnapshot;
 					Schedulers.setFactory(new AllFactory(newS));
-				}
-				else {
-					newS.schedulersSnapshot = Schedulers.setFactoryWithSnapshot(new AllFactory(newS));
+				} else {
+					newS.schedulersSnapshot =
+						Schedulers.setFactoryWithSnapshot(new AllFactory(newS));
 				}
 				if (CURRENT.get() == newS) {
 					return newS;
@@ -202,10 +203,12 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * @return current {@link VirtualTimeScheduler} assigned in {@link Schedulers}
 	 * @throws IllegalStateException if no {@link VirtualTimeScheduler} has been found
 	 */
-	public static VirtualTimeScheduler get(){
+	public static VirtualTimeScheduler get() {
 		VirtualTimeScheduler s = CURRENT.get();
 		if (s == null) {
-			throw new IllegalStateException("Check if VirtualTimeScheduler#enable has been invoked first");
+			throw new IllegalStateException(
+				"Check if VirtualTimeScheduler#enable has been invoked first"
+			);
 		}
 		return s;
 	}
@@ -238,8 +241,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 	}
 
-	final Queue<TimedRunnable> queue =
-			new PriorityBlockingQueue<>(Queues.XS_BUFFER_SIZE);
+	final Queue<TimedRunnable> queue = new PriorityBlockingQueue<>(Queues.XS_BUFFER_SIZE);
 
 	@SuppressWarnings("unused")
 	volatile long counter;
@@ -247,11 +249,16 @@ public class VirtualTimeScheduler implements Scheduler {
 	volatile long nanoTime;
 
 	volatile long deferredNanoTime;
-	static final AtomicLongFieldUpdater<VirtualTimeScheduler> DEFERRED_NANO_TIME = AtomicLongFieldUpdater.newUpdater(VirtualTimeScheduler.class, "deferredNanoTime");
+	static final AtomicLongFieldUpdater<VirtualTimeScheduler> DEFERRED_NANO_TIME = AtomicLongFieldUpdater.newUpdater(
+		VirtualTimeScheduler.class,
+		"deferredNanoTime"
+	);
 
 	volatile int advanceTimeWip;
-	static final AtomicIntegerFieldUpdater<VirtualTimeScheduler> ADVANCE_TIME_WIP =
-			AtomicIntegerFieldUpdater.newUpdater(VirtualTimeScheduler.class, "advanceTimeWip");
+	static final AtomicIntegerFieldUpdater<VirtualTimeScheduler> ADVANCE_TIME_WIP = AtomicIntegerFieldUpdater.newUpdater(
+		VirtualTimeScheduler.class,
+		"advanceTimeWip"
+	);
 
 	volatile boolean shutdown;
 
@@ -290,8 +297,10 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * clock to
 	 */
 	public void advanceTimeTo(Instant instant) {
-		long targetTime = TimeUnit.NANOSECONDS.convert(instant.toEpochMilli(),
-				TimeUnit.MILLISECONDS);
+		long targetTime = TimeUnit.NANOSECONDS.convert(
+			instant.toEpochMilli(),
+			TimeUnit.MILLISECONDS
+		);
 		advanceTime(targetTime - nanoTime);
 	}
 
@@ -359,9 +368,12 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	@Override
-	public Disposable schedulePeriodically(Runnable task,
-			long initialDelay,
-			long period, TimeUnit unit) {
+	public Disposable schedulePeriodically(
+		Runnable task,
+		long initialDelay,
+		long period,
+		TimeUnit unit
+	) {
 		if (shutdown) {
 			throw Exceptions.failWithRejected();
 		}
@@ -383,7 +395,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		if (remainingWork != 1) {
 			return;
 		}
-		for(;;) {
+		for (;;) {
 			if (!defer || !queue.isEmpty()) {
 				//resetting for the first time a delayed schedule is called after a deferredNanoTime is set
 				long targetNanoTime = nanoTime + DEFERRED_NANO_TIME.getAndSet(this, 0);
@@ -415,10 +427,10 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	static final class TimedRunnable implements Comparable<TimedRunnable> {
 
-		final long              time;
-		final Runnable          run;
+		final long time;
+		final Runnable run;
 		final VirtualTimeWorker scheduler;
-		final long              count; // for differentiating tasks at same time
+		final long count; // for differentiating tasks at same time
 
 		TimedRunnable(VirtualTimeWorker scheduler, long time, Runnable run, long count) {
 			this.time = time;
@@ -435,7 +447,7 @@ public class VirtualTimeScheduler implements Scheduler {
 			return compare(time, o.time);
 		}
 
-		static int compare(long a, long b){
+		static int compare(long a, long b) {
 			return a < b ? -1 : (a > b ? 1 : 0);
 		}
 	}
@@ -455,7 +467,12 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 
 		@Override
-		public Scheduler newBoundedElastic(int threadCap, int taskCap, ThreadFactory threadFactory, int ttlSeconds) {
+		public Scheduler newBoundedElastic(
+			int threadCap,
+			int taskCap,
+			ThreadFactory threadFactory,
+			int ttlSeconds
+		) {
 			return s;
 		}
 
@@ -474,17 +491,19 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		volatile boolean shutdown;
 
-		VirtualTimeWorker() { }
+		VirtualTimeWorker() {}
 
 		@Override
 		public Disposable schedule(Runnable run) {
 			if (shutdown) {
 				throw Exceptions.failWithRejected();
 			}
-			final TimedRunnable timedTask = new TimedRunnable(this,
-					0,
-					run,
-					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
+			final TimedRunnable timedTask = new TimedRunnable(
+				this,
+				0,
+				run,
+				COUNTER.getAndIncrement(VirtualTimeScheduler.this)
+			);
 			queue.add(timedTask);
 			drain();
 			return () -> {
@@ -498,10 +517,12 @@ public class VirtualTimeScheduler implements Scheduler {
 			if (shutdown) {
 				throw Exceptions.failWithRejected();
 			}
-			final TimedRunnable timedTask = new TimedRunnable(this,
-					nanoTime + unit.toNanos(delayTime),
-					run,
-					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
+			final TimedRunnable timedTask = new TimedRunnable(
+				this,
+				nanoTime + unit.toNanos(delayTime),
+				run,
+				COUNTER.getAndIncrement(VirtualTimeScheduler.this)
+			);
 			queue.add(timedTask);
 			drain();
 			return () -> {
@@ -511,17 +532,23 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 
 		@Override
-		public Disposable schedulePeriodically(Runnable task,
-				long initialDelay,
-				long period,
-				TimeUnit unit) {
+		public Disposable schedulePeriodically(
+			Runnable task,
+			long initialDelay,
+			long period,
+			TimeUnit unit
+		) {
 			final long periodInNanoseconds = unit.toNanos(period);
 			final long firstNowNanoseconds = nanoTime;
-			final long firstStartInNanoseconds = firstNowNanoseconds + unit.toNanos(initialDelay);
+			final long firstStartInNanoseconds =
+				firstNowNanoseconds + unit.toNanos(initialDelay);
 
-			PeriodicTask periodicTask = new PeriodicTask(firstStartInNanoseconds, task,
-					firstNowNanoseconds,
-					periodInNanoseconds);
+			PeriodicTask periodicTask = new PeriodicTask(
+				firstStartInNanoseconds,
+				task,
+				firstNowNanoseconds,
+				periodInNanoseconds
+			);
 
 			replace(periodicTask, schedule(periodicTask, initialDelay, unit));
 			return periodicTask;
@@ -537,19 +564,22 @@ public class VirtualTimeScheduler implements Scheduler {
 			return shutdown;
 		}
 
-		final class PeriodicTask extends AtomicReference<Disposable> implements Runnable,
-		                                                                        Disposable {
+		final class PeriodicTask
+			extends AtomicReference<Disposable>
+			implements Runnable, Disposable {
 
 			final Runnable decoratedRun;
-			final long     periodInNanoseconds;
+			final long periodInNanoseconds;
 			long count;
 			long lastNowNanoseconds;
 			long startInNanoseconds;
 
-			PeriodicTask(long firstStartInNanoseconds,
-					Runnable decoratedRun,
-					long firstNowNanoseconds,
-					long periodInNanoseconds) {
+			PeriodicTask(
+				long firstStartInNanoseconds,
+				Runnable decoratedRun,
+				long firstNowNanoseconds,
+				long periodInNanoseconds
+			) {
 				this.decoratedRun = decoratedRun;
 				this.periodInNanoseconds = periodInNanoseconds;
 				lastNowNanoseconds = firstNowNanoseconds;
@@ -562,20 +592,24 @@ public class VirtualTimeScheduler implements Scheduler {
 				decoratedRun.run();
 
 				if (get() != CANCELLED && !shutdown) {
-
 					long nextTick;
 
 					long nowNanoseconds = nanoTime;
 					// If the clock moved in a direction quite a bit, rebase the repetition period
-					if (nowNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS < lastNowNanoseconds || nowNanoseconds >= lastNowNanoseconds + periodInNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS) {
+					if (
+						nowNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS < lastNowNanoseconds ||
+						nowNanoseconds >=
+						lastNowNanoseconds +
+						periodInNanoseconds +
+						CLOCK_DRIFT_TOLERANCE_NANOSECONDS
+					) {
 						nextTick = nowNanoseconds + periodInNanoseconds;
-		                /*
-                         * Shift the start point back by the drift as if the whole thing
-                         * started count periods ago.
-                         */
+						/*
+						 * Shift the start point back by the drift as if the whole thing
+						 * started count periods ago.
+						 */
 						startInNanoseconds = nextTick - (periodInNanoseconds * (++count));
-					}
-					else {
+					} else {
 						nextTick = startInNanoseconds + (++count * periodInNanoseconds);
 					}
 					lastNowNanoseconds = nowNanoseconds;
@@ -596,7 +630,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	static final Disposable EMPTY = Disposables.never();
 
 	static boolean replace(AtomicReference<Disposable> ref, @Nullable Disposable c) {
-		for (; ; ) {
+		for (;;) {
 			Disposable current = ref.get();
 			if (current == CANCELLED) {
 				if (c != null) {
@@ -625,8 +659,7 @@ public class VirtualTimeScheduler implements Scheduler {
 			if (!disposed) {
 				try {
 					run.run();
-				}
-				catch (Throwable ex) {
+				} catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
 					throw Exceptions.propagate(ex);
 				}
@@ -641,15 +674,14 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	static final AtomicReference<VirtualTimeScheduler> CURRENT = new AtomicReference<>();
 
-	static final AtomicLongFieldUpdater<VirtualTimeScheduler> COUNTER =
-			AtomicLongFieldUpdater.newUpdater(VirtualTimeScheduler.class, "counter");
+	static final AtomicLongFieldUpdater<VirtualTimeScheduler> COUNTER = AtomicLongFieldUpdater.newUpdater(
+		VirtualTimeScheduler.class,
+		"counter"
+	);
 	static final long CLOCK_DRIFT_TOLERANCE_NANOSECONDS;
 
 	static {
-		CLOCK_DRIFT_TOLERANCE_NANOSECONDS = TimeUnit.MINUTES.toNanos(Long.getLong(
-				"reactor.scheduler.drift-tolerance",
-				15));
+		CLOCK_DRIFT_TOLERANCE_NANOSECONDS =
+			TimeUnit.MINUTES.toNanos(Long.getLong("reactor.scheduler.drift-tolerance", 15));
 	}
-
-
 }

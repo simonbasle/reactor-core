@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import reactor.core.Fuseable;
 import reactor.core.publisher.Signal;
 import reactor.util.annotation.Nullable;
@@ -54,16 +53,18 @@ public final class ValueFormatters {
 	 * switches {@link String#toLowerCase() to lower case}.
 	 */
 	public static final ToStringConverter DURATION_CONVERTER = new ClassBasedToStringConverter<>(
-			Duration.class,
-			d -> true,
-			d -> d.toString().replaceFirst("PT", "").toLowerCase());
+		Duration.class,
+		d -> true,
+		d -> d.toString().replaceFirst("PT", "").toLowerCase()
+	);
 
 	/**
 	 * A generic {@link Object} to {@link String} conversion {@link Function} which is
 	 * also a {@link Predicate}, and which only applies a custom conversion to targets that
 	 * match said {@link Predicate}. Other targets are converted using {@link String#valueOf(Object)}.
 	 */
-	public interface ToStringConverter extends Predicate<Object>, Function<Object, String> {}
+	public interface ToStringConverter
+		extends Predicate<Object>, Function<Object, String> {}
 
 	/**
 	 * An extractor of data wrapped in a {@link BiFunction} aiming at producing a customized {@link String}
@@ -83,8 +84,8 @@ public final class ValueFormatters {
 	 *
 	 * @param <CONTAINER> the type of container
 	 */
-	public interface Extractor<CONTAINER> extends Predicate<Object>, BiFunction<Object, Function<Object, String>, String> {
-
+	public interface Extractor<CONTAINER>
+		extends Predicate<Object>, BiFunction<Object, Function<Object, String>, String> {
 		/**
 		 * Return the targeted container {@link Class}. The {@link BiFunction} shouldn't be
 		 * applied to objects that are not of that class, although it will default to using
@@ -185,8 +186,8 @@ public final class ValueFormatters {
 				CONTAINER container = containerClass.cast(target);
 				if (matches(container)) {
 					return explode(container)
-							.map(contentFormatter)
-							.collect(Collectors.joining(", ", prefix(container), suffix(container)));
+						.map(contentFormatter)
+						.collect(Collectors.joining(", ", prefix(container), suffix(container)));
 				}
 			}
 			return String.valueOf(target);
@@ -203,8 +204,10 @@ public final class ValueFormatters {
 	 * @param <T> the generic type of the matching objects
 	 * @return the class-specific formatter
 	 */
-	public static <T> ToStringConverter forClass(Class<T> tClass,
-			Function<T, String> tToString) {
+	public static <T> ToStringConverter forClass(
+		Class<T> tClass,
+		Function<T, String> tToString
+	) {
 		return new ClassBasedToStringConverter<>(tClass, t -> true, tToString);
 	}
 
@@ -220,9 +223,11 @@ public final class ValueFormatters {
 	 * @param <T> the generic type of the matching objects
 	 * @return the class-specific predicate-filtering formatter
 	 */
-	public static <T> ToStringConverter forClassMatching(Class<T> tClass,
-			Predicate<T> tPredicate,
-			Function<T, String> tToString) {
+	public static <T> ToStringConverter forClassMatching(
+		Class<T> tClass,
+		Predicate<T> tPredicate,
+		Function<T, String> tToString
+	) {
 		return new ClassBasedToStringConverter<>(tClass, tPredicate, tToString);
 	}
 
@@ -234,8 +239,10 @@ public final class ValueFormatters {
 	 * @param anyToString the {@link String} conversion {@link Function} (without input typing)
 	 * @return the predicate-specific formatter
 	 */
-	public static ToStringConverter filtering(Predicate<Object> predicate,
-			Function<Object, String> anyToString) {
+	public static ToStringConverter filtering(
+		Predicate<Object> predicate,
+		Function<Object, String> anyToString
+	) {
 		return new PredicateBasedToStringConverter(predicate, anyToString);
 	}
 
@@ -305,9 +312,11 @@ public final class ValueFormatters {
 	 * @return a formatted array usable in replacement of the vararg
 	 */
 	@Nullable
-	static Object[] convertVarArgs(@Nullable ToStringConverter toStringConverter,
-			@Nullable Collection<Extractor<?>> extractors,
-			@Nullable Object... args) {
+	static Object[] convertVarArgs(
+		@Nullable ToStringConverter toStringConverter,
+		@Nullable Collection<Extractor<?>> extractors,
+		@Nullable Object... args
+	) {
 		if (args == null) return null;
 		Object[] convertedArgs = new Object[args.length];
 		for (int i = 0; i < args.length; i++) {
@@ -316,14 +325,11 @@ public final class ValueFormatters {
 			String converted;
 			if (arg == null || toStringConverter == null) {
 				converted = String.valueOf(arg);
-			}
-			else if (toStringConverter.test(arg)) {
+			} else if (toStringConverter.test(arg)) {
 				converted = toStringConverter.apply(arg);
-			}
-			else if (extractors == null) {
+			} else if (extractors == null) {
 				converted = String.valueOf(arg);
-			}
-			else {
+			} else {
 				converted = null;
 				for (Extractor<?> extractor : extractors) {
 					if (extractor.test(arg)) {
@@ -342,10 +348,13 @@ public final class ValueFormatters {
 
 	static class PredicateBasedToStringConverter implements ToStringConverter {
 
-		private final Predicate<Object>        predicate;
+		private final Predicate<Object> predicate;
 		private final Function<Object, String> function;
 
-		PredicateBasedToStringConverter(Predicate<Object> predicate, Function<Object, String> function) {
+		PredicateBasedToStringConverter(
+			Predicate<Object> predicate,
+			Function<Object, String> function
+		) {
 			this.predicate = predicate;
 			this.function = function;
 		}
@@ -370,7 +379,11 @@ public final class ValueFormatters {
 		private final Predicate<T> tPredicate;
 		private final Function<T, String> function;
 
-		ClassBasedToStringConverter(Class<T> aClass, Predicate<T> predicate, Function<T, String> function) {
+		ClassBasedToStringConverter(
+			Class<T> aClass,
+			Predicate<T> predicate,
+			Function<T, String> function
+		) {
 			this.tClass = aClass;
 			this.tPredicate = predicate;
 			this.function = function;
@@ -397,7 +410,6 @@ public final class ValueFormatters {
 	}
 
 	static final Extractor<Signal> DEFAULT_SIGNAL_EXTRACTOR = new Extractor<Signal>() {
-
 		@Override
 		public Class<Signal> getTargetClass() {
 			return Signal.class;
@@ -425,7 +437,6 @@ public final class ValueFormatters {
 	};
 
 	static final Extractor<Iterable> DEFAULT_ITERABLE_EXTRACTOR = new Extractor<Iterable>() {
-
 		@Override
 		public Class<Iterable> getTargetClass() {
 			return Iterable.class;
@@ -448,9 +459,9 @@ public final class ValueFormatters {
 
 		@Override
 		public Stream<Object> explode(Iterable original) {
-			@SuppressWarnings("unchecked") Spliterator<Object> spliterator = ((Iterable<Object>) original).spliterator();
+			@SuppressWarnings("unchecked")
+			Spliterator<Object> spliterator = ((Iterable<Object>) original).spliterator();
 			return StreamSupport.stream(spliterator, false);
 		}
 	};
-
 }
