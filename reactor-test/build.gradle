@@ -17,6 +17,7 @@ import me.champeau.gradle.japicmp.JapicmpTask
 
 apply plugin: 'biz.aQute.bnd.builder'
 apply plugin: 'kotlin'
+apply plugin: 'com.diffplug.spotless'
 
 description = 'Reactor Test support'
 
@@ -107,6 +108,21 @@ jar {
 
 tasks.withType(Test).all {
 	useJUnitPlatform()
+}
+
+spotless {
+//	ratchetFrom: 'origin/master' //this needs to reflect the relevant maintenance branch
+
+	java {
+		importOrder()
+		removeUnusedImports()
+		trimTrailingWhitespace()
+		prettier(['prettier': '2.2.1', 'prettier-plugin-java': '1.0.1'])
+			.config(['parser': 'java',
+							 'printWidth': 90,
+							 'useTabs': true,
+							 'embeddedLanguageFormatting': 'off'])
+	}
 }
 
 check.dependsOn japicmp
