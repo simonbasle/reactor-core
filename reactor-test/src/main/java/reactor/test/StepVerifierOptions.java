@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Publisher;
+
 import reactor.core.publisher.Signal;
 import reactor.test.ValueFormatters.Extractor;
 import reactor.test.ValueFormatters.ToStringConverter;
@@ -56,6 +58,14 @@ public class StepVerifierOptions {
 	 */
 	public static StepVerifierOptions create() {
 		return new StepVerifierOptions();
+	}
+
+	public static StepVerifierOptions givenOptions() {
+		return create();
+	}
+
+	public <T> StepVerifier.FirstStep<T> checkPublisher(Publisher<T> underTest) {
+		return StepVerifier.create(underTest, this);
 	}
 
 	private StepVerifierOptions() { } //disable constructor
