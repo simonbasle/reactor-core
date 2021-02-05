@@ -945,7 +945,8 @@ public class FluxSwitchOnFirstTest {
                     .verifyThenAssertThat(Duration.ofSeconds(5))
                     .hasOperatorErrorsSatisfying(c ->
                         assertThat(c)
-                                  .hasOnlyOneElementSatisfying(t -> {
+                                  .singleElement()
+                                  .satisfies(t -> {
                                       assertThat(t.getT1()).containsInstanceOf(NullPointerException.class);
                                       assertThat(t.getT2()).isEqualTo(expectedCause);
                                   })
@@ -1018,7 +1019,8 @@ public class FluxSwitchOnFirstTest {
             .verifyThenAssertThat()
             .hasOperatorErrorsSatisfying(c ->
                 assertThat(c)
-                        .hasOnlyOneElementSatisfying(t -> {
+                    .singleElement()
+                    .satisfies(t -> {
                             assertThat(t.getT1()).containsInstanceOf(NullPointerException.class);
                             assertThat(t.getT2()).isEqualTo(expectedCause);
                         })
