@@ -44,6 +44,7 @@ ext {
 testSets {
 	blockHoundTest
 	withMicrometerTest
+	reactiveStreamsTckTest
 }
 
 configurations {
@@ -54,11 +55,6 @@ configurations {
 dependencies {
 	// Reactive Streams
 	api "org.reactivestreams:reactive-streams:_"
-	testImplementation ("org.reactivestreams:reactive-streams-tck:_") {
-		// without this exclusion, testng brings an old version of junit which *embeds* an old version of hamcrest
-		// which gets picked up first and that we don't want. TCK runs fine w/o (old) junit 4.
-		exclude group: 'junit', module: 'junit'
-	}
 
 	// JSR-305 annotations
 	// 3.0.1 is the last version that has the 'annotations' jar needed on the compile classpath
@@ -103,6 +99,12 @@ dependencies {
 	testImplementation "org.awaitility:awaitility:_"
 	testImplementation "com.pivovarit:throwing-function:_"
 	testImplementation "com.tngtech.archunit:archunit:_"
+
+	reactiveStreamsTckTestImplementation ("org.reactivestreams:reactive-streams-tck:_") {
+		// without this exclusion, testng brings an old version of junit which *embeds* an old version of hamcrest
+		// which gets picked up first and that we don't want. TCK runs fine w/o (old) junit 4.
+		exclude group: 'junit', module: 'junit'
+	}
 
 	// withMicrometerTest is a test-set that validates what happens when micrometer *IS*
 	// on the classpath. Needs sourceSets.test.output because tests there use helpers like AutoDisposingRule etc.
@@ -175,15 +177,8 @@ task loops(type: Test, group: 'verification') {
 	}
 }
 
-task reactivestreamsTCK(type: Test, group: 'verification') {
-	include '**/*Verification.*'
-	doFirst {
-		println "Additional tests from `${name}` (${includes})"
-	}
-}
-
 tasks.withType(Test).all {
-	if (it.name == "reactivestreamsTCK") {
+	if (it.name == "reactiveStreamsTckTest") {
 		useTestNG()
 	} else {
 		def tags = rootProject.findProperty("junit-tags")
@@ -211,9 +206,7 @@ blockHoundTest {
 //note that this way the tasks can be run individually
 check {
 	dependsOn withMicrometerTest
-	if (!detectedCiServers.contains("TRAVIS")) {
-		dependsOn reactivestreamsTCK
-	}
+	dependsOn reactiveStreamsTckTest
 	if (!version.endsWith('BUILD-SNAPSHOT')) {
 		dependsOn loops
 	}
