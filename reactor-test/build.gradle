@@ -39,16 +39,16 @@ dependencies {
 	api project(":reactor-core")
 
 	// Not putting kotlin-stdlib as implementation to not force it as a transitive lib
-	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
-	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
+	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:_"
+	testImplementation "org.jetbrains.kotlin:kotlin-stdlib:_"
 
-	testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+	testImplementation platform("org.junit:junit-bom:_")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-	testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
+	testRuntimeOnly "ch.qos.logback:logback-classic:_"
 
-	testImplementation "org.assertj:assertj-core:$assertJVersion"
-	testImplementation "org.mockito:mockito-core:$mockitoVersion"
+	testImplementation "org.assertj:assertj-core:_"
+	testImplementation "org.mockito:mockito-core:_"
 }
 
 task downloadBaseline(type: Download) {

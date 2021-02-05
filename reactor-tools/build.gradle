@@ -37,20 +37,20 @@ configurations {
 dependencies {
     api project(":reactor-core")
 
-    shaded 'net.bytebuddy:byte-buddy-agent:1.10.9'
-    shaded 'net.bytebuddy:byte-buddy:1.10.9'
+    shaded 'net.bytebuddy:byte-buddy-agent:_'
+    shaded 'net.bytebuddy:byte-buddy:_'
     for (dependency in project.configurations.shaded.dependencies) {
         compileOnly(dependency)
         testRuntime(dependency)
         javaAgentTestRuntime(dependency)
     }
 
-    testImplementation platform("org.junit:junit-bom:${jUnitPlatformVersion}")
+    testImplementation platform("org.junit:junit-bom:_")
     testImplementation "org.junit.jupiter:junit-jupiter-api"
     testRuntime "org.junit.jupiter:junit-jupiter-engine"
 
-    testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testImplementation 'cglib:cglib:3.3.0'
+    testImplementation "org.assertj:assertj-core:_"
+    testImplementation 'cglib:cglib:_'
 
     jarFileTestImplementation 'org.assertj:assertj-core:3.12.2' //FIXME bump in root and use property
 }
