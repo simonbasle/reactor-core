@@ -61,8 +61,10 @@ dependencies {
 	}
 
 	// JSR-305 annotations
-	compileOnly "com.google.code.findbugs:jsr305:_"
-	testCompileOnly "com.google.code.findbugs:jsr305:_"
+	// 3.0.1 is the last version that has the 'annotations' jar needed on the compile classpath
+	// therefore we make it sticky and not part of versions.properties
+	compileOnly "com.google.code.findbugs:jsr305:3.0.1"
+	testCompileOnly "com.google.code.findbugs:jsr305:3.0.1"
 
 	//Optional Logging Operator
 	compileOnly "org.slf4j:slf4j-api:_"
