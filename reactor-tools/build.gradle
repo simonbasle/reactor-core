@@ -162,19 +162,6 @@ javaAgentTest {
     ]
 }
 project.tasks.check.dependsOn(javaAgentTest)
-
-// See https://github.com/raphw/byte-buddy/issues/833
-compileBuildPluginTestJava.doLast(
-        new net.bytebuddy.build.gradle.TransformationAction(
-                project,
-                new net.bytebuddy.build.gradle.ByteBuddyExtension(project).tap {
-                    transformation {
-                        plugin = "reactor.tools.agent.ReactorDebugByteBuddyPlugin"
-                    }
-                },
-                compileBuildPluginTestJava
-        )
-)
 project.tasks.check.dependsOn(buildPluginTest)
 
 tasks.withType(Test).all {
