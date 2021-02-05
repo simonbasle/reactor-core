@@ -17,10 +17,11 @@
 package reactor.core.publisher;
 
 import java.lang.ref.WeakReference;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import reactor.test.subscriber.AssertSubscriber;
@@ -127,9 +128,9 @@ public class MonoDetachTest {
 		ts.cancel();
 		o = null;
 
-		Awaitility.with().pollDelay(Duration.ZERO).pollInterval(Duration.ONE_MILLISECOND)
+		Awaitility.with().pollDelay(Duration.ZERO).pollInterval(Durations.ONE_MILLISECOND)
 			.await()
-			.atMost(Duration.FIVE_SECONDS)
+			.atMost(Durations.FIVE_SECONDS)
 			.untilAsserted(() -> {
 				System.gc();
 				Object garbage = new Object();

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
@@ -1664,9 +1665,9 @@ public class FluxFlatMapTest {
 					.expectComplete()
 					.verifyThenAssertThat();
 
-			Awaitility.with().pollDelay(org.awaitility.Duration.ZERO).pollInterval(org.awaitility.Duration.ONE_MILLISECOND)
+			Awaitility.with().pollDelay(Duration.ZERO).pollInterval(Durations.ONE_MILLISECOND)
 					.await()
-					.atMost(org.awaitility.Duration.ONE_SECOND)
+					.atMost(Durations.ONE_SECOND)
 					.untilAsserted(() -> assertions.hasNotDroppedElements().hasDroppedErrors(1));
 		}
 	}
